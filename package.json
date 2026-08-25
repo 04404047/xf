@@ -1,0 +1,13 @@
+{
+  "name": "recycleflow-server",
+  "version": "2.0.0",
+  "private": true,
+  "description": "RecycleFlow NG — 废旧塑料回收工厂收发管理（前后端分离 · 服务端 JWT 鉴权 · 增量同步）",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
