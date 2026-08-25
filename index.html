@@ -16,10 +16,11 @@
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:13px;}
   button{font-family:inherit;cursor:pointer;}
-  #login{position:fixed;inset:0;background:radial-gradient(1200px 600px at 15% 10%,#1e3a8a 0%,transparent 55%),radial-gradient(900px 500px at 90% 90%,#0e7490 0%,transparent 55%),linear-gradient(135deg,#0b1220,#0f172a 60%,#111c3a);display:flex;align-items:center;justify-content:center;z-index:50;overflow:hidden;}
-  #login::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.25),transparent 60%);top:-160px;right:-120px;filter:blur(10px);}
-  #login::after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(16,163,74,.20),transparent 60%);bottom:-140px;left:-100px;filter:blur(8px);}
-  .login-card{position:relative;background:rgba(255,255,255,.97);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.6);border-radius:18px;width:392px;padding:36px 32px;box-shadow:0 30px 80px rgba(0,0,0,.45);}
+  #login{position:fixed;inset:0;background:radial-gradient(1200px 600px at 15% 10%,#1e3a8a 0%,transparent 55%),radial-gradient(900px 500px at 90% 90%,#0e7490 0%,transparent 55%),linear-gradient(135deg,#0b1220,#0f172a 60%,#111c3a);display:flex;align-items:center;justify-content:center;z-index:50;overflow:auto;padding:24px 16px;}
+  #login::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.25),transparent 60%);top:-160px;right:-120px;filter:blur(10px);z-index:0;pointer-events:none;}
+  #login::after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(16,163,74,.20),transparent 60%);bottom:-140px;left:-100px;filter:blur(8px);z-index:0;pointer-events:none;}
+  .login-card{position:relative;z-index:1;background:rgba(255,255,255,.97);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.6);border-radius:18px;width:392px;padding:36px 32px;box-shadow:0 30px 80px rgba(0,0,0,.45);}
+  .login-card .btn{position:relative;z-index:1;}
   .login-card h1{margin:0 0 4px;font-size:23px;color:#0f172a;display:flex;align-items:center;letter-spacing:.2px;}
   .login-card .sub{color:var(--muted);margin-bottom:20px;font-size:13px;}
   .login-card label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px;font-weight:600;}
@@ -234,6 +235,13 @@
     .topbar{padding:0 14px;gap:10px;}
     .content{padding:14px;}
     .topbar .company-tag,.topbar .factory-tag{display:none;}
+    /* 移动端登录页适配：卡片自适应宽度、收紧间距，保证登录按钮始终可见可点 */
+    #login{padding:16px 12px;align-items:flex-start;}
+    .login-card{width:100%;max-width:392px;padding:26px 20px;margin:auto 0;}
+    .login-card .sub{margin-bottom:14px;}
+    .login-card label{margin:12px 0 5px;}
+    .login-card .btn{margin-top:18px;padding:14px;font-size:15px;}
+    .login-foot{margin-top:14px;flex-wrap:wrap;gap:8px;}
   }
 </style>
 </head>
@@ -256,8 +264,8 @@
     <label data-i18n="liFactory">工厂 / Plant</label>
     <select id="li-factory"><option value="">—</option></select>
     <div class="li-err" id="li-err"></div>
-    <button class="btn" onclick="signIn()" data-i18n="liSign">登录</button>
-    <button class="btn ghost sm mt" onclick="openAcctModal()" data-i18n="register">注册新账号</button>
+    <button type="button" class="btn" onclick="signIn()" data-i18n="liSign">登录</button>
+    <button type="button" class="btn ghost sm mt" onclick="openAcctModal()" data-i18n="register">注册新账号</button>
     <div class="login-foot">
       <span class="small muted" data-i18n="liNote">演示原型 · 支持离线 · ¥ 计价</span>
       <div class="lang-seg" id="login-seg">
@@ -2583,7 +2591,7 @@ function renderShipRows(){
   /* 配送总厂逻辑：不与分厂收购量挂钩，只按形态(破碎料)录入装车量；可混合多品种颜色，用备注说明 */
   const forms=['破碎料'];
   el.innerHTML=forms.map(f=>{
-    return `<tr data-f="${f}"><td class="muted">—</td><td>${t('opt_frag')}</td><td class="num">—</td><td><input class="ship-w" type="number" value="0" min="0" style="width:110px" placeholder="0"/></td><td><input class="ship-note" style="width:150px" placeholder="${lang==='zh'?'混装说明':'mixed note'}"/></td></tr>`;
+    return `<tr data-f="${f}"><td class="muted">—</td><td>${t('opt_frag')}</td><td class="num">—</td><td><input class="ship-w" type="number" value="0" min="0" style="width:92px" placeholder="0"/> <span class="unit">kg</span></td><td><textarea class="ship-note" style="width:160px;height:40px;resize:vertical;font:inherit" placeholder="${lang==='zh'?'混装说明（可换行）':'mixed note (multi-line)'}"></textarea></td></tr>`;
   }).join('');
 }
 
@@ -2943,6 +2951,8 @@ function refreshProductSelects(){
 /* ===== Logistics ===== */
 function logisticsAllScope(){return (currentRole==='boss'&&currentFactory===ALL_VIEW)||currentFactory==='Sagamu';}
 function renderLogistics(){
+  /* 进入物流协同时主动与云端同步一次（节流 20s），保证总厂及时看到分厂发来的待入库单 */
+  if(SYNC.enabled()){ const _n=Date.now(); if(!window.__lastLogiSync||_n-window.__lastLogiSync>20000){ window.__lastLogiSync=_n; syncPull(); } }
   const all=logisticsAllScope();
   const ships=records.filter(r=>r.ty==='Ship'&&(all||r.factory===currentFactory));
   const inbs=records.filter(r=>r.ty==='Inbound'&&(all||r.fromFac===currentFactory));
@@ -2953,7 +2963,27 @@ function renderLogistics(){
   setHTML('lg-summary', (lang==='zh'?'在途 ':'In transit ')+transit.toLocaleString()+' kg · '+(lang==='zh'?'待入库 ':'Pending ')+pend.toLocaleString()+' kg');
 }
 function confirmInbound(id){
-  const inb=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');if(!inb){toast(lang==='zh'?'未找到对应入库记录':'Inbound record not found');return;}
+  let inb=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');
+  if(!inb){
+    /* 多设备场景：本设备可能尚未拉取到分厂发来的入库单。先与云端同步一次再确认，
+       避免「分厂明明发过货、总厂却提示未找到」的同步时序问题。 */
+    if(SYNC.enabled() && typeof fetch==='function'){
+      toast(lang==='zh'?'本地未找到，正在从云端刷新…':'Not found locally, refreshing from cloud…');
+      syncPull().then(function(){
+        const inb2=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');
+        if(inb2) _doConfirmInbound(inb2);
+        else confirmInboundFail();
+      });
+      return;
+    }
+    confirmInboundFail(); return;
+  }
+  _doConfirmInbound(inb);
+}
+function confirmInboundFail(){
+  toast(lang==='zh'?'未找到该入库记录：请确认①分厂已在「配送总厂」发货 ②本机已完成云端同步（设置-同步中手动同步一次）':'Inbound not found: ensure branch shipped & this device synced to cloud');
+}
+function _doConfirmInbound(inb){
   if(!can('inbound')){toast(lang==='zh'?'无入库确认权限':'No inbound permission');return;}
   inb.status='已入库';inb.ts=Date.now();
   const ship=records.find(r=>String(r.id)===String(inb.linkId)&&r.ty==='Ship');if(ship){ship.status='已入库';ship.ts=Date.now();}
