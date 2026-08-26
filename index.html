@@ -539,12 +539,11 @@
             <div class="note" data-i18n="s_pick_note">配送量按实际装车量填写，不与收购量挂钩；混装多品种/颜色请在备注说明，总厂确认收货后计入原料库存。</div>
             <div class="tbl-scroll">
             <table>
-              <thead><tr><th data-i18n="h_mat">材质</th><th data-i18n="h_form">形态</th><th data-i18n="s_ship">发货(kg)</th><th data-i18n="s_note">备注(混装说明)</th></tr></thead>
+              <thead><tr><th data-i18n="h_form">形态</th><th data-i18n="s_ship">发货(kg)</th><th data-i18n="s_note">备注(混装说明)</th></tr></thead>
               <tbody id="ship-rows"></tbody>
             </table>
             </div>
             <div class="row mt">
-              <div class="field" style="flex:1 1 260px"><label data-i18n="s_note">发货备注</label><input id="s-shipnote" placeholder="e.g. 含 PP/PE/PVC 混合破碎料"/></div>
               <div class="field"><label data-i18n="s_carrier">承运商</label><input id="s-carrier" value="GreenLine Logistics"/></div>
               <div class="field"><label data-i18n="s_vehicle">车牌</label><input id="s-vehicle" value="Lagos KN-2234"/></div>
               <div class="field"><label data-i18n="s_driver">司机</label><input id="s-driver" value="Emeka O."/></div>
@@ -2591,7 +2590,7 @@ function renderShipRows(){
   /* 配送总厂逻辑：不与分厂收购量挂钩，只按形态(破碎料)录入装车量；可混合多品种颜色，用备注说明 */
   const forms=['破碎料'];
   el.innerHTML=forms.map(f=>{
-    return `<tr data-f="${f}"><td class="muted">—</td><td>${t('opt_frag')}</td><td class="num">—</td><td><input class="ship-w" type="number" value="0" min="0" style="width:92px" placeholder="0"/> <span class="unit">kg</span></td><td><textarea class="ship-note" style="width:160px;height:40px;resize:vertical;font:inherit" placeholder="${lang==='zh'?'混装说明（可换行）':'mixed note (multi-line)'}"></textarea></td></tr>`;
+    return `<tr data-f="${f}"><td style="vertical-align:middle">${t('opt_frag')}</td><td style="vertical-align:middle"><input class="ship-w" type="number" value="0" min="0" style="width:92px" placeholder="0"/> <span class="unit">kg</span></td><td style="vertical-align:middle"><textarea class="ship-note" style="width:260px;height:40px;resize:vertical;font:inherit" placeholder="${lang==='zh'?'混装说明（可换行）':'mixed note (multi-line)'}"></textarea></td></tr>`;
   }).join('');
 }
 
