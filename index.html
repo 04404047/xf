@@ -350,6 +350,7 @@
           <div class="stat orange" id="dash-card-7" onclick="dashClick(7)"><div class="k" id="dash-l7"></div><div class="v" id="dash-c7">0</div><div class="hint" data-i18n="d_click">点击查看明细 →</div></div>
           <div class="stat" id="dash-card-8" onclick="dashClick(8)"><div class="k" id="dash-l8"></div><div class="v" id="dash-c8">0</div><div class="hint" data-i18n="d_click">点击查看明细 →</div></div>
           <div class="stat" id="dash-card-9" onclick="dashClick(9)"><div class="k" id="dash-l9"></div><div class="v" id="dash-c9">0</div><div class="hint" data-i18n="d_click">点击查看明细 →</div></div>
+          <div class="stat blue" id="dash-card-10" onclick="go('logistics')"><div class="k" id="dash-l10"></div><div class="v" id="dash-c10">0</div><div class="hint" data-i18n="d_click">点击查看物流 →</div></div>
         </div>
         <div class="grid2">
           <div class="panel">
@@ -1051,7 +1052,7 @@ const I18N = {
     sync_online:"在线", sync_offline:"离线",
     hero_title:"回收作业台", hero_sub:"本厂以废旧塑料回收为核心，记录每日回收与同步状态", hero_cta:"＋ 新建回收单",
     d_crushed:"今日破碎料总量", d_bulk:"今日大料总量", d_sum:"两者之和", d_recamt:"今日回收金额", d_shiptoday:"今日配送量", d_click:"点击查看明细 →",
-    d_ov_bulk:"今日大料采购量", d_ov_crushed:"今日破碎料采购量", d_ov_total:"今日合计采购量", d_ov_buyamt:"今日采购金额", d_ov_income:"累计进账", d_ov_expense:"累计支出", d_ov_balance:"当前余额", d_ov_produced:"今日生产颗粒(kg)", d_ov_sold:"今日出售颗粒(kg)", dash_home:"首页总览",
+    d_ov_bulk:"本月大料采购量", d_ov_crushed:"本月破碎料采购量", d_ov_total:"本月合计采购量", d_ov_buyamt:"本月采购金额", d_ov_income:"累计进账", d_ov_expense:"累计支出", d_ov_balance:"当前余额", d_ov_produced:"本月生产颗粒(kg)", d_ov_sold:"本月出售颗粒(kg)", d_ov_shipw:"本月配送总厂(kg)", dash_home:"首页总览",
     fin_cur:"货币", fin_rate:"1 人民币 CNY = ? 奈拉 NGN", fin_fx_equiv:"等值", fin_equiv:"折合", set_rate:"汇率兑换", rate_tip:"设置当前汇率后，收支登记将按此汇率自动换算展示；具备财务权限（老板 / 工厂管理员）即可修改。", fin_fx:"换算试算：输入金额，自动转换为另一种货币",
     acct_grant:"分配权限", ann_body:"公告内容", ann_del:"删除", ann_post:"📢 发布公告", ann_publish:"发布", ann_title:"公告标题", contact:"联系", rec_detail:"回收明细", reset_all:"全部业务数据", s_pick_note:"选择要配送的库存",
     d_trend_title:"近 7 日 回收 vs 出入（kg）", d_legend_rec:"回收", d_legend_ship:"配送", d_legend_ship_in:"入库", d_activity:"近期动态", d_inv_title:"各材质累计原料（kg，在库参考）",
@@ -1135,7 +1136,7 @@ const I18N = {
     sync_online:"Online", sync_offline:"Offline",
     hero_title:"Recovery Console", hero_sub:"This plant centres on plastic recovery — track daily recovery & dispatch", hero_cta:"＋ New Recovery",
     d_crushed:"Crushed today", d_bulk:"Bulk today", d_sum:"Bulk + Crushed", d_recamt:"Recovered amount today", d_shiptoday:"Dispatched today", d_click:"Click for detail →",
-    d_ov_bulk:"Bulk purchased today", d_ov_crushed:"Crushed purchased today", d_ov_total:"Total purchased today", d_ov_buyamt:"Purchase amount today", d_ov_income:"Income (cum.)", d_ov_expense:"Expense (cum.)", d_ov_balance:"Balance", d_ov_produced:"Pellets produced today (kg)", d_ov_sold:"Pellets sold today (kg)", dash_home:"Home Overview",
+    d_ov_bulk:"Bulk purchased this month", d_ov_crushed:"Crushed purchased this month", d_ov_total:"Total purchased this month", d_ov_buyamt:"Purchase amount this month", d_ov_income:"Income (cum.)", d_ov_expense:"Expense (cum.)", d_ov_balance:"Balance", d_ov_produced:"Pellets produced this month (kg)", d_ov_sold:"Pellets sold this month (kg)", d_ov_shipw:"Shipped to HQ this month (kg)", dash_home:"Home Overview",
     fin_cur:"Currency", fin_rate:"1 CNY = ? NGN", fin_fx_equiv:"Equivalent", fin_equiv:"Equiv.", set_rate:"Exchange Rate", rate_tip:"Set the current rate; finance entries auto-convert at this rate. Finance role (boss / factory admin) can edit.", fin_fx:"Conversion: enter an amount to auto-convert",
     acct_grant:"Grant access", ann_body:"Content", ann_del:"Delete", ann_post:"📢 Post", ann_publish:"Publish", ann_title:"Title", contact:"Contact", rec_detail:"Detail", reset_all:"All business data", s_pick_note:"Pick stock to ship",
     d_trend_title:"Receiving vs outbound (last 7 days, kg)", d_legend_rec:"Receive", d_legend_ship:"Ship", d_legend_ship_in:"Inbound", d_activity:"Recent activity", d_inv_title:"Cumulative raw material by material (kg)",
@@ -1430,6 +1431,8 @@ const STATE_KEY="rf_state_v4";
 /* 业务"今日"基准：默认跟随设备实时日期（确保"当日回收/下班核对"随日历推进）。
    如需演示固定某天，可在此覆盖为 'YYYY-MM-DD'；否则使用 today() 的本地日期。 */
 const PLANT_TODAY=(typeof DEMO_TODAY!=='undefined'&&DEMO_TODAY)?DEMO_TODAY:today();
+/* 当月判断：仅比较「年-月」前缀，用于首页统计由「今日」改为「当月」汇总 */
+function isThisMonth(dt){ if(!dt)return false; const t=PLANT_TODAY; if(!t)return false; return String(dt).slice(0,7)===String(t).slice(0,7); }
 const COLORS=['透明','单色','白色','红色','黄色','蓝色','绿色','紫色','黑色','VJ','GBT','杂色'];
 const COLOR_LABELS={
   zh:{'透明':'透明','单色':'单色','白色':'白色','红色':'红色','黄色':'黄色','蓝色':'蓝色','绿色':'绿色','紫色':'紫色','黑色':'黑色','VJ':'VJ','GBT':'GBT','杂色':'杂色','管子':'管子','扣板':'扣板','混合':'混合','GBT桶':'GBT桶','勺子':'勺子','yellow黄桶':'yellow黄桶','天花板':'天花板'},
@@ -1782,7 +1785,7 @@ function scopeRecords(){
 }
 function recomputeDashboard(){
   const scope=(currentRole==='boss'&&currentFactory==='ALL')?'ALL':currentFactory;
-  const recs=scopeRecords().filter(r=>r.dt===PLANT_TODAY);
+  const recs=scopeRecords().filter(r=>isThisMonth(r.dt));
   let recKg=0,recAmt=0,crushed=0,bulk=0,shipW=0,crushW=0,prodW=0,saleW=0,saleAmt=0,pendingW=0;
   recs.forEach(r=>{
     if(r.ty==='Receive'){recKg+=r.tw;recAmt+=toNGN(toCNY(r.ta,r.currency||'NGN'));r.items.forEach(it=>{if(it.f==='大料')bulk+=it.w;else if(it.f==='破碎料')crushed+=it.w;});}
@@ -1811,8 +1814,12 @@ function recomputeDashboard(){
   setC(5,t('d_ov_income'),M(income));
   setC(6,t('d_ov_expense'),fmtExpense(expense,'NGN'));
   setC(7,t('d_ov_balance'),M(balance));
+  /* 分厂无造粒业务：非总厂、非全局视角时隐藏造粒量统计卡 */
+  const isHQorAll=(currentRole==='boss'&&currentFactory==='ALL')||currentFactory==='Sagamu';
+  const c8=document.getElementById('dash-card-8'); if(c8)c8.style.display=isHQorAll?'':'none';
   setC(8,t('d_ov_produced'),kg(prodW));
   setC(9,t('d_ov_sold'),kg(saleW));
+  setC(10,t('d_ov_shipw'),kg(shipW));
   renderAnnouncements();
 }
 function dashTrendData(){
@@ -2552,10 +2559,14 @@ function saveShipping(view){
   const noteAll=(shipNote?shipNote+' · ':'')+'batch '+batch;
   if(editingShipId){
     const ship=records.find(r=>r.id===editingShipId&&r.ty==='Ship');if(!ship)return;
-    const inb=records.find(r=>r.ty==='Inbound'&&r.linkId===editingShipId);
+    let inb=records.find(r=>r.ty==='Inbound'&&r.linkId===editingShipId);
     const fromFac=ship.factory;
     ship.dt=date;ship.dest=dest;ship.items=items;ship.tw=tot;ship.ta=0;ship.factory=fromFac;ship.fromFac=fromFac;ship.note=noteAll;ship.custName='→ 总厂';ship.ts=Date.now();
-    if(inb){inb.dt=date;inb.dest=dest;inb.items=items.map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note}));inb.tw=tot;inb.fromFac=fromFac;inb.note='from '+fromFac+' · '+(shipNote?shipNote+' · ':'')+'batch '+ship.batch;inb.ts=Date.now();}
+    const inbNote='from '+fromFac+' · '+(shipNote?shipNote+' · ':'')+'batch '+ship.batch;
+    if(inb){inb.dt=date;inb.dest=dest;inb.items=items.map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note}));inb.tw=tot;inb.fromFac=fromFac;inb.note=inbNote;inb.ts=Date.now();}
+    else { /* 分厂编辑发货单时若关联入库单缺失，则补全新建（待入库），确保总厂即时可确认入库 */
+      inb=pushRec({id:genGid(),dt:date,ty:'Inbound',custId:0,custName:'来料入库',items:items.map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note})),tw:tot,ta:0,ticket:'',op:opName(),batch:ship.batch,dest,note:inbNote,factory:'Sagamu',status:'待入库',linkId:ship.id,fromFac});
+    }
     ship.carrier=carrier;ship.vehicle=vehicle;ship.driver=driver;ship.eta=eta;ship.shipCost=cost;
     auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_ship',target:ship.batch,detail:(lang==='zh'?'修改 · ':'edited · ')+tot.toLocaleString()+' kg · '+FACTORIES[fromFac].name});
     editingShipId=null;
