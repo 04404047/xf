@@ -254,6 +254,8 @@
   /* 库存手动校正输入框 */
   .inv-adj{font:inherit;text-align:right;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:#fff;color:var(--text);}
   .inv-adj:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .inv-mat-t{font:inherit;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:#fff;color:var(--text);width:90px;}
+  .inv-mat-t:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
 </style>
 </head>
 <body>
@@ -659,7 +661,7 @@
           </div>
           <div class="panel">
             <div class="panel-head"><h3 data-i18n="inv_pellet">成品库存（材质 · 颜色）</h3></div>
-            <div class="panel-body" style="padding:0"><div class="tbl-scroll"><table><thead><tr><th data-i18n="h_mat">材质</th><th data-i18n="h_color">颜色</th><th data-i18n="h_w">重量(kg)</th></tr></thead><tbody id="inv-pellet"></tbody></table></div></div>
+            <div class="panel-body" style="padding:0"><div class="tbl-scroll"><table><thead><tr><th data-i18n="h_mat">材质</th><th data-i18n="h_color">颜色</th><th data-i18n="h_bags">袋数</th></tr></thead><tbody id="inv-pellet"></tbody></table></div></div>
           </div>
         </div>
         <div class="panel">
@@ -1098,7 +1100,7 @@ const I18N = {
     h_time:"时间", h_actor:"操作人", h_action:"动作", h_target:"对象", h_detail:"明细",
     ac_price:"调价", ac_create:"新建", ac_edit:"编辑", ac_edit_bank:"银行卡号已更新", ac_receive:"回收", ac_ship:"配送", ac_cust:"客户", ac_crush:"破碎", ac_produce:"造粒", ac_sale:"出售", ac_inbound:"入库", ac_reset:"归零",
     lo_lang:"界面语言", lo_lang_opt_zh:"中文", lo_lang_opt_en:"English", lo_cur:"货币", lo_date_fmt:"日期格式", lo_num:"数字格式", lo_printer:"打印机 / 地磅", lo_save:"保存设置", lo_note:"语言切换即时生效；其余本地化参数随版本固化（人民币 ¥ / YYYY-MM-DD）。点击「保存设置」将偏好写入本地。",
-    h_date:"日期", h_mat:"材质", h_form:"形态", h_color:"颜色", h_w:"重量", h_price:"单价 ₦", h_amt:"金额",
+    h_date:"日期", h_mat:"材质", h_form:"形态", h_color:"颜色", h_w:"重量", h_bags:"袋数", h_price:"单价 ₦", h_amt:"金额",
     cm_title_new:"新建客户", cm_title_edit:"编辑客户", cm_name:"姓名 *", cm_phone:"电话", cm_bank:"开户行", cm_acct:"账号", cm_addr:"地址", cm_note:"备注", cm_save:"保存", cm_cancel:"取消",
     c_factory:"所属工厂", c_imprint:"重名印记", c_imprint_tip:"该客户名称与所列工厂已有客户重复，请跨厂核对",
     fin_title:"财务记录", fin_income:"进项", fin_expense:"出项", fin_net:"净额", fin_daily:"每日收支统计", fin_date:"日期", fin_type:"类型", fin_cat:"类别", fin_amount:"金额(¥)", fin_note:"备注", fin_by:"经手人", fin_add:"＋ 新增财务记录", fin_link:"🔗 关联业务收支", fin_factory:"所属工厂", fin_auto:"自动关联", s_cost:"运费(¥)",
@@ -1182,7 +1184,7 @@ const I18N = {
     h_time:"Time", h_actor:"Actor", h_action:"Action", h_target:"Target", h_detail:"Detail",
     ac_price:"Price change", ac_create:"Create", ac_edit:"Edit", ac_edit_bank:"bank acct updated", ac_receive:"Receive", ac_ship:"Ship", ac_cust:"Customer", ac_crush:"Crush", ac_produce:"Produce", ac_sale:"Sale", ac_inbound:"Inbound", ac_reset:"Reset",
     lo_lang:"UI language", lo_lang_opt_zh:"中文", lo_lang_opt_en:"English", lo_cur:"Currency", lo_date_fmt:"Date format", lo_num:"Number format", lo_printer:"Printer / weighbridge", lo_save:"Save settings", lo_note:"Language switch applies instantly; other localization params are fixed per build (China ¥ / YYYY-MM-DD). Click “Save settings” to persist preference locally.",
-    h_date:"Date", h_mat:"Material", h_form:"Form", h_color:"Color", h_w:"Weight", h_price:"Unit ₦", h_amt:"Amount",
+    h_date:"Date", h_mat:"Material", h_form:"Form", h_color:"Color", h_w:"Weight", h_bags:"Bags", h_price:"Unit ₦", h_amt:"Amount",
     cm_title_new:"New Customer", cm_title_edit:"Edit Customer", cm_name:"Name *", cm_phone:"Phone", cm_bank:"Bank", cm_acct:"Account", cm_addr:"Address", cm_note:"Remark", cm_save:"Save", cm_cancel:"Cancel",
     c_factory:"Plant", c_imprint:"Dup imprint", c_imprint_tip:"This customer name duplicates one already registered in the listed plant(s); verify across plants",
     fin_title:"Finance Records", fin_income:"Income", fin_expense:"Expense", fin_net:"Net", fin_daily:"Daily Income/Expense", fin_date:"Date", fin_type:"Type", fin_cat:"Category", fin_amount:"Amount(¥)", fin_note:"Remark", fin_by:"By", fin_add:"＋ New Finance Entry", fin_link:"🔗 Link Business", fin_factory:"Plant", fin_auto:"Auto", s_cost:"Freight(¥)",
@@ -1652,6 +1654,8 @@ let auditLog = [
 let settings = {lang:'zh', conn:'online', pending:3, lastSync:'2026-08-16 09:40', netMode:'lan', lanEnabled:true, syncUrl:'', syncKey:'', rate:230, lastSyncTs:0};
 let invAdjust = {}; // 成品库存校正（袋）：'材质|颜色' -> 相对计算值的袋数偏移（老板可编辑）
 let invAdjustRaw = {}; // 原料库存校正（kg）：'材质|形态' -> 相对计算值的 kg 偏移（老板可编辑）
+let invRawEdit = {}; // 原料库存自由编辑覆盖（老板）：'材质|形态' -> {m,f,w} 绝对有效值
+let invPelletEdit = {}; // 成品库存自由编辑覆盖（老板）：'材质|颜色' -> {m,c,bags} 绝对有效值
 var expandedRecDates = {};   // 回收单：已展开的日期（其余日期折叠为总结框）
 var expandedProdDates = {};  // 生产记录：已展开的日期
 /* 财务记录：三厂独立录入、老板可全局汇总。
@@ -1699,7 +1703,7 @@ function toast(msg){
 
 /* ============ State persistence ============ */
 function saveState(){
-  Store.set(STATE_KEY,{customers,priceBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances});
+  Store.set(STATE_KEY,{customers,priceBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances});
   scheduleAutoSync();
 }
 function loadState(){
@@ -1726,6 +1730,8 @@ function loadState(){
   if(s.settings&&typeof s.settings==='object')settings=Object.assign(settings,s.settings);
   if(s.invAdjust&&typeof s.invAdjust==='object')invAdjust=s.invAdjust;
   if(s.invAdjustRaw&&typeof s.invAdjustRaw==='object')invAdjustRaw=s.invAdjustRaw;
+  if(s.invRawEdit&&typeof s.invRawEdit==='object')invRawEdit=s.invRawEdit;
+  if(s.invPelletEdit&&typeof s.invPelletEdit==='object')invPelletEdit=s.invPelletEdit;
   if(Array.isArray(s.deletedGids))deletedGids=s.deletedGids.slice();
   if(Array.isArray(s.deletedUsers))deletedUsers=s.deletedUsers.slice();
   if(Array.isArray(s.deletedCustomers))deletedCustomers=s.deletedCustomers.slice();
@@ -2242,10 +2248,13 @@ function renderFinance(){
   const income=fs.filter(f=>f.type==='income').reduce((s,f)=>s+toCNY(f.amount,f.currency),0);
   const expense=fs.filter(f=>f.type==='expense').reduce((s,f)=>s+toCNY(f.amount,f.currency),0);
   const cards=document.getElementById('fin-cards');
-  if(cards)cards.innerHTML=`
-    <div class="stat green"><div class="k">${t('fin_income')}</div><div class="v">${fmtWithFx(income,'CNY')}</div></div>
-    <div class="stat red"><div class="k">${t('fin_expense')}</div><div class="v">${fmtExpense(expense,'CNY')}</div></div>
-    <div class="stat ${income-expense>=0?'green':'red'}"><div class="k">${t('fin_net')}</div><div class="v">${fmtWithFx(income-expense,'CNY')}</div></div>`;
+  if(cards){
+    let cardHTML='';
+    if(hasIncome) cardHTML+=`<div class="stat green"><div class="k">${t('fin_income')}</div><div class="v">${fmtWithFx(income,'CNY')}</div></div>`;
+    cardHTML+=`<div class="stat red"><div class="k">${t('fin_expense')}</div><div class="v">${fmtExpense(expense,'CNY')}</div></div>`;
+    if(hasIncome) cardHTML+=`<div class="stat ${income-expense>=0?'green':'red'}"><div class="k">${t('fin_net')}</div><div class="v">${fmtWithFx(income-expense,'CNY')}</div></div>`;
+    cards.innerHTML=cardHTML;
+  }
   const byDay={};
   fs.forEach(f=>{const d=f.dt||'—';if(!byDay[d])byDay[d]={inc:0,exp:0};const cny=toCNY(f.amount,f.currency);if(f.type==='income')byDay[d].inc+=cny;else byDay[d].exp+=cny;});
   const days=Object.keys(byDay).sort().reverse();
@@ -2980,19 +2989,57 @@ function renderSell(){
 /* ===== Inventory ===== */
 function saveInvAdjust(key,bags){const fac=effectiveFactory();const pel=flattenPellet(computeInventory(fac));const base=Math.round((pel[key]||0)/BAG_KG);invAdjust[key]=Math.max(0,Math.round(bags))-base;settings.pending=(settings.pending||0)+1;saveState();refreshAfterSave();toast(lang==='zh'?'库存已校正':'Stock adjusted');}
 function saveInvAdjustRaw(key,kg){const fac=effectiveFactory();const fr=flattenRaw(computeInventory(fac));const base=Math.round(fr[key]||0);invAdjustRaw[key]=Math.max(0,Math.round(kg))-base;settings.pending=(settings.pending||0)+1;saveState();refreshAfterSave();toast(lang==='zh'?'原料库存已校正':'Raw stock adjusted');}
+/* 原料库存自由编辑：覆盖材质/形态/重量（老板），便于修正回放口径与标签 */
+function editRawInv(key,field,val){
+  if(currentRole!=='boss')return;
+  const ov=invRawEdit[key]||{};
+  if(field==='m')ov.m=String(val||'').trim();
+  else if(field==='f')ov.f=String(val||'').trim();
+  else if(field==='w')ov.w=Math.max(0,Math.round(+val||0));
+  invRawEdit[key]=ov;settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
+}
+/* 成品库存自由编辑：覆盖材质/颜色/袋数（老板） */
+function editPelletInv(key,field,val){
+  if(currentRole!=='boss')return;
+  const ov=invPelletEdit[key]||{};
+  if(field==='m')ov.m=String(val||'').trim();
+  else if(field==='c')ov.c=String(val||'').trim();
+  else if(field==='bags')ov.bags=Math.max(0,Math.round(+val||0));
+  invPelletEdit[key]=ov;settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
+}
 function renderInventory(){
   const fac=effectiveFactory();
   const inv=computeInventory(fac);
   const fr=flattenRaw(inv);
   const rawKeys=Object.keys(fr).filter(k=>fr[k]>0.0001).sort();
-  const rawTotal=rawKeys.reduce((s,k)=>s+fr[k],0);
-  const rawRows=rawKeys.map(k=>{const [m,f]=k.split('|');const base=Math.round(fr[k]);const eff=base+(invAdjustRaw[k]||0);const cell=currentRole==='boss'?`<input class="inv-adj" type="number" min="0" step="1" value="${eff}" data-k="${esc(k)}" onchange="saveInvAdjustRaw(this.getAttribute('data-k'),+this.value)" style="width:96px"/> kg`:`${eff.toLocaleString()} kg`;return `<tr><td><b>${m}</b></td><td>${f==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num">${cell}</td></tr>`;}).join('');
+  const rawRows=rawKeys.map(k=>{
+    const [m,f]=k.split('|');const base=Math.round(fr[k]);const ov=invRawEdit[k];
+    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?ov.w:(base+(invAdjustRaw[k]||0));
+    if(currentRole==='boss'){
+      return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" onchange="editRawInv(this.getAttribute('data-k'),'m',this.value)" style="width:72px"/></td>
+        <td><input class="inv-mat-t" type="text" value="${esc(curF)}" data-k="${esc(k)}" data-field="f" onchange="editRawInv(this.getAttribute('data-k'),'f',this.value)" style="width:72px"/></td>
+        <td class="num"><input class="inv-adj" type="number" min="0" step="1" value="${Math.round(curW)}" data-k="${esc(k)}" data-field="w" onchange="editRawInv(this.getAttribute('data-k'),'w',+this.value)" style="width:90px"/> kg</td></tr>`;
+    }
+    return `<tr><td><b>${esc(curM)}</b></td><td>${curF==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num">${Math.round(curW).toLocaleString()} kg</td></tr>`;
+  }).join('');
+  const rawTotal=rawKeys.reduce((s,k)=>{const ov=invRawEdit[k];const base=Math.round(fr[k]);return s+(ov?ov.w:(base+(invAdjustRaw[k]||0)));},0);
   const rawFoot=rawKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'原料合计':'Raw total'}</td><td class="num">${Math.round(rawTotal).toLocaleString()} kg</td></tr>`:'';
   setHTML('inv-raw', (rawRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无原料库存':'No raw stock'}</td></tr>`)+rawFoot);
   const pel=flattenPellet(inv);
   const pelKeys=Object.keys(pel).filter(k=>pel[k]>0.0001).sort();
-  const pelTotalBags=pelKeys.reduce((s,k)=>s+Math.round(pel[k]/BAG_KG)+(invAdjust[k]||0),0);
-  const pelRows=pelKeys.map(k=>{const [m,c]=k.split("|");const base=Math.round(pel[k]/BAG_KG);const eff=base+(invAdjust[k]||0);const cell=currentRole==='boss'?`<input class="inv-adj" type="number" min="0" value="${eff}" data-k="${esc(k)}" onchange="saveInvAdjust(this.getAttribute('data-k'),+this.value)" style="width:80px"/> ${unitBag()}`:`${eff} ${unitBag()}`;return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):"—"}</td><td class="num">${cell}</td></tr>`;}).join('');
+  const pelRows=pelKeys.map(k=>{
+    const [m,c]=k.split("|");const base=Math.round(pel[k]/BAG_KG);const ov=invPelletEdit[k];
+    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?ov.bags:(base+(invAdjust[k]||0));
+    if(currentRole==='boss'){
+      return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" onchange="editPelletInv(this.getAttribute('data-k'),'m',this.value)" style="width:60px"/></td>
+        <td><input class="inv-mat-t" type="text" value="${esc(curC||'—')}" data-k="${esc(k)}" data-field="c" onchange="editPelletInv(this.getAttribute('data-k'),'c',this.value)" style="width:80px"/></td>
+        <td class="num"><input class="inv-adj" type="number" min="0" value="${Math.round(curB)}" data-k="${esc(k)}" data-field="bags" onchange="editPelletInv(this.getAttribute('data-k'),'bags',+this.value)" style="width:70px"/> ${unitBag()}</td></tr>`;
+    }
+    return `<tr><td><b>${esc(curM)}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(curB)} ${unitBag()}</td></tr>`;
+  }).join('');
+  const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round(pel[k]/BAG_KG);return s+(ov?ov.bags:(base+(invAdjust[k]||0)));},0);
   const pelFoot=pelKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'成品合计':'Finished total'}</td><td class="num">${Math.round(pelTotalBags).toLocaleString()} ${unitBag()}</td></tr>`:'';
   setHTML('inv-pellet', (pelRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无成品库存':'No finished stock'}</td></tr>`)+pelFoot);
   if(currentRole==='boss'){ const h=document.getElementById('inv-edit-hint'); if(h)h.style.display=''; } else { const h=document.getElementById('inv-edit-hint'); if(h)h.style.display='none'; }
@@ -3252,7 +3299,14 @@ function syncPush(){
     deletedUsers:deletedUsers,
     deletedCustomers:deletedCustomers,
     finances:finances.map(f=>Object.assign({},f,{updatedTs:f.ts||0})),
-    deletedFinances:deletedFinances
+    deletedFinances:deletedFinances,
+    priceBy:priceBy,
+    products:products,
+    priceHist:priceHist,
+    invAdjust:invAdjust,
+    invAdjustRaw:invAdjustRaw,
+    invRawEdit:invRawEdit,
+    invPelletEdit:invPelletEdit
   });
   return fetch(SYNC.url()+'/sync/push',{method:'POST',headers:SYNC.headers(),body})
     .then(r=>r.json()).then(j=>{
@@ -3260,7 +3314,7 @@ function syncPush(){
       return !!(j&&j.ok);
     }).catch(e=>{ console.warn('syncPush failed',e); return false; });
 }
-function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances){
+function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances, remotePriceBy, remoteProducts, remotePriceHist, remoteInvAdjust, remoteInvAdjustRaw, remoteInvRawEdit, remoteInvPelletEdit){
   const map={}; records.forEach(r=>{map[r.id]=r;});
   (remoteRecs||[]).forEach(rr=>{
     if(rr.id==null)return;
@@ -3299,6 +3353,16 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
     else if((rf.ts||0) > (local.ts||0) || ((rf.ts||0)===(local.ts||0) && (rf.rev||0) > (local.rev||0))){ Object.assign(local, rf); }
   });
   (remoteDelFinances||[]).forEach(fid=>{ finances=finances.filter(f=>f.id!==fid); if(deletedFinances.indexOf(fid)<0)deletedFinances.push(fid); });
+  /* ---- 价格主数据 / 产品目录 / 库存校正：服务端权威，拉取后并入本地（服务端为空时保留本地既有数据，避免首次同步清空） ---- */
+  if(remotePriceBy&&typeof remotePriceBy==='object'&&['Sagamu','OPIC','Ikeja'].some(f=>remotePriceBy[f]&&Object.keys(remotePriceBy[f]||{}).length)){
+    ['Sagamu','OPIC','Ikeja'].forEach(f=>{ if(remotePriceBy[f]&&typeof remotePriceBy[f]==='object')priceBy[f]=remotePriceBy[f]; });
+  }
+  if(remoteProducts&&typeof remoteProducts==='object'&&Object.keys(remoteProducts).length)products=remoteProducts;
+  if(Array.isArray(remotePriceHist))priceHist=remotePriceHist;
+  if(remoteInvAdjust&&typeof remoteInvAdjust==='object')Object.assign(invAdjust,remoteInvAdjust);
+  if(remoteInvAdjustRaw&&typeof remoteInvAdjustRaw==='object')Object.assign(invAdjustRaw,remoteInvAdjustRaw);
+  if(remoteInvRawEdit&&typeof remoteInvRawEdit==='object')Object.assign(invRawEdit,remoteInvRawEdit);
+  if(remoteInvPelletEdit&&typeof remoteInvPelletEdit==='object')Object.assign(invPelletEdit,remoteInvPelletEdit);
   /* 同步后，若当前登录账号对象被替换，重新指向最新引用，避免会话 stale */
   if(currentUser){ const fresh=users.find(u=>u.username===currentUser.username); if(fresh)currentUser=fresh; }
 }
@@ -3309,7 +3373,7 @@ function syncPull(){
   return fetch(SYNC.url()+'/sync/pull?since='+since,{headers:SYNC.headers()})
     .then(r=>r.json()).then(j=>{
       if(!j||!j.records) return false;
-      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[]);
+      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[], j.priceBy, j.products, j.priceHist, j.invAdjust, j.invAdjustRaw, j.invRawEdit, j.invPelletEdit);
       /* 数据互通：拉取后重新校验「发货→总厂入库」配对，确保总厂始终有可确认的来料入库单
          （分厂发货在分厂本地生成入库单可能因未同步而不到达总厂，此处以总厂本地补齐） */
       reconcileAll();
@@ -3364,7 +3428,9 @@ function doSync(){
 }
 function backupLocal(){settings.lastBackup=nowStr();saveState();const blob=new Blob([JSON.stringify(Store.get(STATE_KEY,{}))],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rf_backup_'+nowStr().replace(/[: ]/g,'-')+'.json';a.click();toast(lang==='zh'?'本地备份已创建':'Local backup created');}
 function backupCloud(){settings.lastBackup=nowStr();saveState();toast(lang==='zh'?'云端备份完成':'Cloud backup done');}
-function restoreBackup(input){const f=input.files&&input.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s&&s.records){if(!confirm(lang==='zh'?'恢复备份将覆盖当前数据，确定？':'Overwrite current data?'))return;if(Array.isArray(s.customers))customers=s.customers;if(Array.isArray(s.records))records=s.records.map(r=>{if(!r.items)r.items=[];if(!r.factory)r.factory='Sagamu';recTotals(r);return r;});if(s.priceMap)priceMap=s.priceMap;if(s.products)products=s.products;if(s.priceHist)priceHist=s.priceHist;if(s.auditLog)auditLog=s.auditLog;if(s.settings)settings=Object.assign(settings,s.settings);if(Array.isArray(s.users)&&s.users.length)users=s.users;saveState();renderAll();toast(lang==='zh'?'已恢复备份':'Backup restored');}}catch(e){toast(lang==='zh'?'恢复失败':'Restore failed');}};rd.readAsText(f);}
+function restoreBackup(input){const f=input.files&&input.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s&&s.records){if(!confirm(lang==='zh'?'恢复备份将覆盖当前数据，确定？':'Overwrite current data?'))return;if(Array.isArray(s.customers))customers=s.customers;if(Array.isArray(s.records))records=s.records.map(r=>{if(!r.items)r.items=[];if(!r.factory)r.factory='Sagamu';recTotals(r);return r;});if(s.priceMap)priceMap=s.priceMap;if(s.products)products=s.products;if(s.priceHist)priceHist=s.priceHist;
+if(s.invRawEdit)invRawEdit=s.invRawEdit;
+if(s.invPelletEdit)invPelletEdit=s.invPelletEdit;if(s.auditLog)auditLog=s.auditLog;if(s.settings)settings=Object.assign(settings,s.settings);if(Array.isArray(s.users)&&s.users.length)users=s.users;saveState();renderAll();toast(lang==='zh'?'已恢复备份':'Backup restored');}}catch(e){toast(lang==='zh'?'恢复失败':'Restore failed');}};rd.readAsText(f);}
 function saveLocal(){const el=document.getElementById('lo-lang');if(el)settings.lang=el.value;saveState();setLang(settings.lang||'zh');toast(lang==='zh'?'设置已保存':'Settings saved');}
 function renderAudit(){const el=document.getElementById('audit-body');if(!el)return;const rows=(auditLog||[]).slice(0,300).map((r,i)=>`<tr><td class="muted">${esc(r.time||'')}</td><td>${esc(r.actor||'')}</td><td>${esc(t(r.action)||r.action||'')}</td><td>${esc(r.target||'')}</td><td class="muted">${esc(r.detail||'')}</td><td><span class="link" style="color:var(--danger)" onclick="deleteAuditItem(${i})">${t('delete')}</span></td></tr>`).join('');el.innerHTML=rows||`<tr><td colspan="6" class="muted">—</td></tr>`;}
 /* 单条删除审计记录（操作本身记入审计，形成闭环可追溯） */

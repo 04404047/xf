@@ -39,6 +39,16 @@ let deletedUsers = [];  // 已删除账号 {username, ts}（墓碑）
 let deletedCustomers = []; // 已删除客户 {id, ts}（墓碑）
 let financesById = {};  // id -> finance（财务主数据，跨厂区同步，支持老板全局汇总）
 let deletedFinances = []; // 已删除财务 {id, ts}（墓碑）
+/* —— 价格主数据 / 产品目录 / 库存校正：服务端权威持久化，使各厂独立定价与库存校正跨重启、跨设备一致 ——
+   priceBy：按厂区分桶 {Sagamu:{},OPIC:{},Ikeja:{}}；products：成品种类·颜色总目录；
+   priceHist：调价历史；invAdjust/invAdjustRaw/invRawEdit/invPelletEdit：库存校正覆盖。 */
+let priceBy = { Sagamu: {}, OPIC: {}, Ikeja: {} };
+let products = {};
+let priceHist = [];
+let invAdjust = {};
+let invAdjustRaw = {};
+let invRawEdit = {};
+let invPelletEdit = {};
 /* 账号「服务端权威」主数据：username -> {username,name,role,factories,salt,passwordHash,mustChange,updatedTs,deleted}
    所有登录/改密/建号均由服务器落盘，天然跨设备一致（彻底根治党本"换设备登不上/改密不生效"）。
    注意：与 usersById 并存；usersById 保留仅用于旧版业务同步兼容，不参与登录校验。 */
@@ -63,6 +73,13 @@ try {
     financesById = d.financesById || {};
     deletedFinances = normTomb(d.deletedFinances);
     if (d.accounts && typeof d.accounts === 'object') accounts = d.accounts;
+    if (d.priceBy && typeof d.priceBy === 'object') priceBy = d.priceBy;
+    if (d.products && typeof d.products === 'object') products = d.products;
+    if (Array.isArray(d.priceHist)) priceHist = d.priceHist;
+    if (d.invAdjust && typeof d.invAdjust === 'object') invAdjust = d.invAdjust;
+    if (d.invAdjustRaw && typeof d.invAdjustRaw === 'object') invAdjustRaw = d.invAdjustRaw;
+    if (d.invRawEdit && typeof d.invRawEdit === 'object') invRawEdit = d.invRawEdit;
+    if (d.invPelletEdit && typeof d.invPelletEdit === 'object') invPelletEdit = d.invPelletEdit;
     console.log('[sync] 已载入本地账本：%d 条记录，%d 条删除墓碑；账号 %d；客户 %d；财务 %d',
       Object.keys(ledger).length, deleted.length, Object.keys(usersById).length, Object.keys(customersById).length, Object.keys(financesById).length);
   }
@@ -157,7 +174,7 @@ function persist() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, accounts }, null, 0);
+    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit }, null, 0);
     const packed = encryptData(plain);
     const tmp = DATA_FILE + '.tmp';
     /* 先写临时文件再原子 rename，避免进程崩溃/断电时损坏数据文件 */
@@ -405,6 +422,19 @@ const server = http.createServer(async (req, res) => {
       delete financesById[fid];
       if (deletedFinances.findIndex(t => t.id === fid) < 0) deletedFinances.push({ id: fid, ts: now });
     });
+    /* 价格主数据（按厂区分别并入，Object.assign 合并避免跨厂互相覆盖/清空） */
+    if (body.priceBy && typeof body.priceBy === 'object') {
+      ['Sagamu', 'OPIC', 'Ikeja'].forEach(fac => {
+        if (!priceBy[fac]) priceBy[fac] = {};
+        if (body.priceBy[fac] && typeof body.priceBy[fac] === 'object') priceBy[fac] = Object.assign(priceBy[fac], body.priceBy[fac]);
+      });
+    }
+    if (body.products && typeof body.products === 'object' && Object.keys(body.products).length) products = body.products;
+    if (Array.isArray(body.priceHist)) priceHist = body.priceHist;
+    if (body.invAdjust && typeof body.invAdjust === 'object') Object.assign(invAdjust, body.invAdjust);
+    if (body.invAdjustRaw && typeof body.invAdjustRaw === 'object') Object.assign(invAdjustRaw, body.invAdjustRaw);
+    if (body.invRawEdit && typeof body.invRawEdit === 'object') Object.assign(invRawEdit, body.invRawEdit);
+    if (body.invPelletEdit && typeof body.invPelletEdit === 'object') Object.assign(invPelletEdit, body.invPelletEdit);
     persist();
     sendJSON(res, 200, { ok: true, serverTime: Date.now(), count: Object.keys(ledger).length }, req);
     return;
@@ -436,7 +466,14 @@ const server = http.createServer(async (req, res) => {
       deletedUsers: incDelUsers,
       deletedCustomers: incDelCustomers,
       finances: incFinances,
-      deletedFinances: incDelFinances
+      deletedFinances: incDelFinances,
+      priceBy: priceBy,
+      products: products,
+      priceHist: priceHist,
+      invAdjust: invAdjust,
+      invAdjustRaw: invAdjustRaw,
+      invRawEdit: invRawEdit,
+      invPelletEdit: invPelletEdit
     }, req);
     return;
   }
