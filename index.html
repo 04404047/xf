@@ -955,16 +955,22 @@
         <div id="tab-rate" class="panel hidden" data-page-node-id="kSMuF6J93uimPRGLBLM8m4"><div class="panel-head" data-page-node-id="l0fZ9LM6eK5oaAuNv23Kqi"><h3 data-i18n="set_rate" data-page-node-id="UXX1iyZBZXmgfNO585zAFq">汇率兑换（人民币 / 奈拉）</h3></div>
           <div class="panel-body" data-page-node-id="3GU9Erfu84YQjbAEhT9tHQ">
             <div class="note mb" data-i18n="rate_tip" data-page-node-id="bdpoSornzuUF7ZnAplICXx">设置当前汇率后，收支登记将按此汇率自动换算展示；具备财务权限（老板 / 工厂管理员）即可修改。</div>
+            <div class="rate-current-box" style="margin:8px 0 14px;font-size:15px">
+              <span class="muted" data-i18n="rate_current">当前汇率</span>：<b id="rate-current">1 ¥ = 230 ₦</b>
+            </div>
             <div class="row" style="align-items:flex-end;gap:12px" data-page-node-id="kmipAwuwz0kw1CEm1YNgI8">
-              <div class="field" style="max-width:260px" data-page-node-id="8V9lSWwTiKuFWMyyArqGSp"><label data-i18n="fin_rate" data-page-node-id="xFvPdpMJTOJZV20hTbhC2l">1 人民币 CNY = ? 奈拉 NGN</label><input id="rate-input" type="number" min="0" step="0.01" oninput="rateChanged()" data-page-node-id="7oC4DwEsbGnJIBRi5ZbyW8"/></div>
+              <div class="field" style="max-width:260px" data-page-node-id="8V9lSWwTiKuFWMyyArqGSp"><label data-i18n="fin_rate" data-page-node-id="xFvPdpMJTOJZV20hTbhC2l">1 人民币 CNY = ? 奈拉 NGN</label><input id="rate-input" type="number" min="0" step="0.01" oninput="rateInputLive()" data-page-node-id="7oC4DwEsbGnJIBRi5ZbyW8"/></div>
               <button class="btn eco sm" onclick="saveRate()" data-i18n="lo_save" data-page-node-id="NOaPwf9LTJ59oQwUVO6nmM">保存汇率</button>
             </div>
             <div class="mt" style="border-top:1px dashed #ddd;padding-top:12px" data-page-node-id="j3U0ZdBxmMOEfLOV7V8aLU">
-              <div class="small muted mb" data-i18n="fin_fx" data-page-node-id="nwJK1ESH7lhZgymB8gLdVe">换算试算：输入金额，自动转换为另一种货币</div>
-              <div class="row" style="align-items:flex-end;gap:12px" data-page-node-id="Ts4UtMRI3f4AFW3bwXBptX">
-                <div class="field" style="max-width:200px" data-page-node-id="78Uf0YRK7QCRL5w8Ir3buN"><label data-i18n="fin_amount" data-page-node-id="MZOAD6kPQWZjffTvKeQS14">金额</label><input id="fx-amt" type="number" min="0" step="0.01" placeholder="0.00" oninput="rateConvertPreview()" data-page-node-id="NXx3oSKqta0Qj6ADXcCqai"/></div>
-                <div class="field" style="max-width:160px" data-page-node-id="W4U8VSChZlu3lU2OpNAC8O"><label data-i18n="fin_cur" data-page-node-id="RbfFFPBbQGemfx4zdFUXvG">货币</label><select id="fx-cur" onchange="rateConvertPreview()" data-page-node-id="NXJHdAN2WjLksRUv8V86e0"><option value="CNY" data-page-node-id="WGeqQYHDKhXkxI4hrb7Hxt">¥ CNY</option><option value="NGN" data-page-node-id="xpXXCBNDvkGgECctnc4tCV">₦ NGN</option></select></div>
-                <div class="field" style="max-width:240px" data-page-node-id="Gw7iOwX3OTmlQbLsLlmh2j"><label data-i18n="fin_fx_equiv" data-page-node-id="sn4Ie2u5dYhSeQgHSzEFjM">等值</label><div id="fx-out" class="kv-out" data-page-node-id="t0k3pPf2hJlhziWQxDexAK">—</div></div>
+              <div class="small muted mb" data-i18n="fin_fx" data-page-node-id="nwJK1ESH7lhZgymB8gLdVe">双向换算：输入一侧金额，自动换算另一侧</div>
+              <div class="row" style="align-items:flex-end;gap:12px;flex-wrap:wrap">
+                <div class="field" style="max-width:200px"><label data-i18n="fin_cny2ngn">人民币 ¥ → 奈拉 ₦</label><input id="cny-amt" type="number" min="0" step="0.01" placeholder="0.00" oninput="rateConvert2()"/></div>
+                <div class="field" style="max-width:240px"><label data-i18n="fin_equiv">等值</label><div id="cny-out" class="kv-out">—</div></div>
+              </div>
+              <div class="row" style="align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:10px">
+                <div class="field" style="max-width:200px"><label data-i18n="fin_ngn2cny">奈拉 ₦ → 人民币 ¥</label><input id="ngn-amt" type="number" min="0" step="0.01" placeholder="0.00" oninput="rateConvert2()"/></div>
+                <div class="field" style="max-width:240px"><label data-i18n="fin_equiv">等值</label><div id="ngn-out" class="kv-out">—</div></div>
               </div>
             </div>
           </div></div>
@@ -3281,10 +3287,10 @@ function setPeriod(p,btn){
 function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('#view-settings > .panel').forEach(p=>p.classList.toggle('hidden',p.id!=='tab-'+t));if(t==='sync')renderSyncConfig();if(t==='rate')renderRateTab();}
 
 /* ===== Settings / Sync ===== */
-function renderRateTab(){const inp=document.getElementById('rate-input');if(inp)inp.value=(settings.rate>0)?settings.rate:'';rateConvertPreview();}
-function rateChanged(){const out=document.getElementById('fx-out');if(out)out.textContent='';}
+function renderRateTab(){const inp=document.getElementById('rate-input');if(inp)inp.value=(settings.rate>0)?settings.rate:'';const cur=document.getElementById('rate-current');if(cur)cur.textContent='1 ¥ = '+(fxRate())+' ₦';rateConvert2();}
+function rateInputLive(){const cur=document.getElementById('rate-current');const v=parseFloat((document.getElementById('rate-input')||{}).value)||0;if(cur)cur.textContent=(v>0)?('1 ¥ = '+v+' ₦'):('1 ¥ = '+(fxRate())+' ₦');}
 function saveRate(){if(!can('finance.manage')){toast(lang==='zh'?'无汇率修改权限（需财务权限）':'No permission to edit rate');return;}const v=parseFloat(document.getElementById('rate-input').value)||0;if(v<=0){toast(lang==='zh'?'汇率需大于 0':'Rate must be > 0');return;}settings.rate=v;saveState();renderFinance();recomputeDashboard();renderRateTab();toast(lang==='zh'?'汇率已保存：1 CNY = '+v+' NGN':'Rate saved: 1 CNY = '+v+' NGN');}
-function rateConvertPreview(){const amt=parseFloat(document.getElementById('fx-amt').value)||0;const cur=document.getElementById('fx-cur')?document.getElementById('fx-cur').value:'CNY';const out=document.getElementById('fx-out');if(!out)return;if(amt<=0||fxRate()<=0){out.innerHTML='—';return;}out.innerHTML=fmtWithFx(amt,cur);}
+function rateConvert2(){const r=fxRate();const cny=parseFloat((document.getElementById('cny-amt')||{}).value)||0;const ngn=parseFloat((document.getElementById('ngn-amt')||{}).value)||0;const cnyOut=document.getElementById('cny-out');if(cnyOut)cnyOut.textContent=(cny>0&&r>0)?(fmtMoney(cny*r)+' ₦'):'—';const ngnOut=document.getElementById('ngn-out');if(ngnOut)ngnOut.textContent=(ngn>0&&r>0)?(fmtMoney(ngn/r)+' ¥'):'—';}
 function toggleBossTabs(){const rt=document.getElementById('set-tab-rate');if(rt)rt.style.display=can('finance.manage')?'':'none';}
 function updateRoleBadge(){
   const rb=roleBadgeMap[currentRole]?roleBadgeMap[currentRole][lang]:'';
@@ -3457,7 +3463,9 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
     Object.keys(dk).forEach(function(k){ const ts=dk[k]||0; if(ts>0){ if(kind==='raw'){delete invAdjustRaw[k];delete invRawEdit[k];} else {delete invAdjust[k];delete invPelletEdit[k];} } });
   });
   /* 同步后，若当前登录账号对象被替换，重新指向最新引用，避免会话 stale */
-  if(currentUser){ const fresh=users.find(u=>u.username===currentUser.username); if(fresh)currentUser=fresh; }
+  if(currentUser){ const fresh=users.find(u=>u.username===currentUser.username); if(fresh){currentUser=fresh; currentRole=fresh.role;} }
+  /* 账号/角色可能随同步变化，立即刷新角色徽标与汇率等权限相关 UI 的可见性 */
+  updateRoleBadge();
 }
 function syncPull(){
   if(!SYNC.enabled()) return Promise.resolve(false);
@@ -3873,13 +3881,15 @@ function submitAcct(){
     /* 老板赋权：更新已有账号角色/工厂/密码——服务端权威，确保换设备即时同步 */
     const u=users.find(x=>x.username===username);if(!u){if(msg)msg.textContent=lang==='zh'?'账号不存在':'Account not found';return;}
     if(pass && !passwordStrong(pass)){if(msg)msg.textContent=lang==='zh'?'密码需≥8位且含字母与数字':'Password >=8 chars with letters & digits';return;}
-    const body={name:name,role:role,factories:factories.slice()}; if(pass)body.password=pass;
+    const validRoles=['boss','devAdmin','factoryAdmin','registrar','auditor'];
+    const safeRole=validRoles.includes(role)?role:u.role; // 角色下拉框无匹配项(如老板)时不可写空，保留原角色
+    const body={name:name,factories:factories.slice()}; if(safeRole)body.role=safeRole; if(pass)body.password=pass;
     const applyLocal=()=>{
       if(pass){ const salt=genSalt(); u.salt=salt; u.passwordHash=hashPassword(pass,salt); u.mustChange=true; }
-      u.name=name; u.role=role; u.factories=factories.slice(); u.updatedTs=Date.now();
+      u.name=name; if(safeRole)u.role=safeRole; u.factories=factories.slice(); u.updatedTs=Date.now();
       settings.pending=(settings.pending||0)+1;
-      auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_edit',target:username,detail:lang==='zh'?'赋权 · '+name+' · '+role:'grant · '+name+' · '+role});
-      saveState();renderAccounts();updateSyncUI();syncPush();
+      auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_edit',target:username,detail:lang==='zh'?'赋权 · '+name+' · '+safeRole:'grant · '+name+' · '+safeRole});
+      saveState();renderAccounts();updateSyncUI();syncPush();updateRoleBadge();
       toast(lang==='zh'?'已更新账号权限':'Permissions updated');
       closeAcctModal();
     };
@@ -4094,6 +4104,8 @@ function viewProduceDetail(id){
       <div class="field" data-page-node-id="3VT2fu9wF9jg3jlbHaeFJ2"><label data-i18n="acct_username" data-page-node-id="xRXvYDzuLewYrO5AC5KCFt">账号</label><input id="ac-user" placeholder="工号 / 手机号 / 任意标识" data-page-node-id="YygxpRQUbC9OgHMSSYhksM"/></div>
       <div class="field" data-page-node-id="KYH6mlP2YGW5lxbbFw91Bu"><label data-i18n="acct_name" data-page-node-id="uRDQBxBcurViwHE53y3OK1">姓名</label><input id="ac-name" placeholder="张三" data-page-node-id="05ygt54g0OA09LRA3f1QZG"/></div>
       <div class="field" data-page-node-id="xrRY1F0NMYhgDydNVIX3kb"><label data-i18n="acct_role" data-page-node-id="PRgV5xfc3gbOjjVa8YZfYD">角色</label><select id="ac-role" data-page-node-id="gGNQS4Q9Lcmcw0f0Wx2O1j">
+        <option value="boss">老板</option>
+        <option value="devAdmin">开发管理员</option>
         <option value="factoryAdmin" data-page-node-id="pS4n5egkBOdcmXyHcZ8d8F">工厂管理员</option>
         <option value="registrar" data-page-node-id="LLGzlNEqBpLb8UhgbqxQaa">登记员</option>
         <option value="auditor" data-page-node-id="JYugcFLQ968AHm8O20LgG0">审计员</option>
