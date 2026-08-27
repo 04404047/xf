@@ -4012,19 +4012,6 @@ function resetSelectedData(cat){
 }
 /* ===== init ===== */
 loadState();
-/* 整合包支持：从 URL 参数 ?syncKey= 自动写入同步密钥（仅在带参时生效），
-   写入后立即从地址栏清除，避免密钥残留在浏览器历史/地址栏 */
-(function(){
-  try{
-    var u=new URLSearchParams(location.search);
-    var sk=u.get('syncKey');
-    if(sk){ settings.syncKey=sk.trim(); u.delete('syncKey');
-      var nu=location.pathname+(u.toString()?'?'+u.toString():'')+location.hash;
-      history.replaceState(null,'',nu);
-      if(typeof saveState==='function'){ try{ saveState(); }catch(e){} }
-    }
-  }catch(e){}
-})();
 autoDetectSync(); /* 若由一体化服务器托管且未配置同步地址，自动指向同源服务器 */
 reconcileAll(); /* 启动即校验发货/入库关联完整性 */
 setupCombo('rc-name','rc-name-list',c=>c.name+' '+c.phone,c=>`<b>${esc(c.name)}</b> <span class="muted">· ${esc(c.phone)}</span>`,selectCustomer);
