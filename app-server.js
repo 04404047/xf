@@ -452,10 +452,18 @@ const server = http.createServer(async (req, res) => {
       const rk = incInvDeleted[kind] || {};
       Object.keys(rk).forEach(function (key) {
         const ts = rk[key] || 0;
-        if (ts <= 0) return;
-        if (kind === 'raw') { delete invAdjustRaw[key]; delete invRawEdit[key]; delete body.invAdjustRaw[key]; delete body.invRawEdit[key]; }
-        else { delete invAdjust[key]; delete invPelletEdit[key]; delete body.invAdjust[key]; delete body.invPelletEdit[key]; }
         invDeleted[kind] = invDeleted[kind] || {};
+        if (ts <= 0) {
+          /* 客户端显式解除墓碑（重新入库/编辑时发 ts=0 标记）：清除服务端墓碑与残留键，
+             随后由下方 mergeInv 用 body 中的新值将该键重新加回。仅此显式信号才允许复活，
+             普通同步（body 不含该键的墓碑）不会清除墓碑，从而防止陈旧推送复活已删条目。 */
+          if (invDeleted[kind][key]) delete invDeleted[kind][key];
+          if (kind === 'raw') { delete invAdjustRaw[key]; delete invRawEdit[key]; }
+          else { delete invAdjust[key]; delete invPelletEdit[key]; }
+          return;
+        }
+        if (kind === 'raw') { delete invAdjustRaw[key]; delete invRawEdit[key]; if (body.invAdjustRaw) delete body.invAdjustRaw[key]; if (body.invRawEdit) delete body.invRawEdit[key]; }
+        else { delete invAdjust[key]; delete invPelletEdit[key]; if (body.invAdjust) delete body.invAdjust[key]; if (body.invPelletEdit) delete body.invPelletEdit[key]; }
         if ((invDeleted[kind][key] || 0) < ts) invDeleted[kind][key] = ts;
       });
     });

@@ -1395,7 +1395,7 @@ function buildSeedUsers(){
 const ROLE_PERMS={
   boss:['view:*','customer:*','receive','ship','produce','sell','inbound','crush','pricing','settings.write','audit.view','record.delete','customer.create','customer.edit','customer.delete','account.manage','data.reset','view.allFactories','announce','finance.view','finance.manage'],
   devAdmin:['view:*','customer:*','receive','ship','produce','sell','inbound','crush','pricing','settings.write','audit.view','record.delete','customer.create','customer.edit','customer.delete','account.manage','data.reset','view.allFactories','announce','finance.view','finance.manage'],
-  factoryAdmin:['view:dashboard','view:customers','view:receiving','view:today','view:pricing','view:shipping','view:crush','view:produce','view:sell','view:logistics','view:inventory','view:search','view:reports','view:settings','view:custdetail','view:finance','customer.create','customer.edit','customer.delete','receive','ship','produce','sell','pricing','record.delete','settings.write','audit.view','finance.view','finance.manage'],
+  factoryAdmin:['view:dashboard','view:customers','view:receiving','view:today','view:pricing','view:shipping','view:crush','view:produce','view:sell','view:logistics','view:inventory','view:search','view:reports','view:settings','view:custdetail','view:finance','customer.create','customer.edit','customer.delete','receive','ship','inbound','produce','sell','pricing','record.delete','settings.write','audit.view','finance.view','finance.manage'],
   registrar:['view:dashboard','view:customers','view:receiving','view:today','view:shipping','view:search','view:custdetail','receive','ship','record.delete'],
   auditor:['view:dashboard','view:customers','view:today','view:search','view:reports','view:settings','view:custdetail','view:finance','audit.view','finance.view']
 };
@@ -3044,7 +3044,8 @@ function renderInventory(){
   const fac=effectiveFactory();
   const inv=computeInventory(fac);
   const fr=flattenRaw(inv);
-  const rawKeys=Array.from(new Set([...Object.keys(fr).filter(k=>fr[k]>0.0001), ...Object.keys(invAdjustRaw).filter(k=>(invAdjustRaw[k]||0)!==0), ...Object.keys(invRawEdit)])).sort();
+  const rawDel=invDeleted.raw||{};
+  const rawKeys=Array.from(new Set([...Object.keys(fr).filter(k=>fr[k]>0.0001), ...Object.keys(invAdjustRaw).filter(k=>(invAdjustRaw[k]||0)!==0), ...Object.keys(invRawEdit)])).filter(k=>!rawDel[k]).sort();
   const rawRows=rawKeys.map(k=>{
     const [m,f]=k.split('|');const base=Math.round(fr[k]||0);const ov=invRawEdit[k];
     const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?ov.w:(base+(invAdjustRaw[k]||0));
@@ -3059,7 +3060,8 @@ function renderInventory(){
   const rawFoot=rawKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'原料合计':'Raw total'}</td><td class="num">${Math.round(rawTotal).toLocaleString()} kg</td></tr>`:'';
   setHTML('inv-raw', (rawRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无原料库存':'No raw stock'}</td></tr>`)+rawFoot);
   const pel=flattenPellet(inv);
-  const pelKeys=Array.from(new Set([...Object.keys(pel).filter(k=>pel[k]>0.0001), ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0), ...Object.keys(invPelletEdit)])).sort();
+  const pelDel=invDeleted.pellet||{};
+  const pelKeys=Array.from(new Set([...Object.keys(pel).filter(k=>pel[k]>0.0001), ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0), ...Object.keys(invPelletEdit)])).filter(k=>!pelDel[k]).sort();
   const pelRows=pelKeys.map(k=>{
     const [m,c]=k.split("|");const base=Math.round((pel[k]||0)/BAG_KG);const ov=invPelletEdit[k];
     const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?ov.bags:(base+(invAdjust[k]||0));
@@ -3119,6 +3121,7 @@ function addRawStock(){
   if(!(w>0)){toast(lang==='zh'?'请输入有效重量':'Enter valid weight');return;}
   const key=m+'|'+f;
   invAdjustRaw[key]=(invAdjustRaw[key]||0)+w;
+  clearInvDeleted('raw',key); /* 重新入库则解除该键的删除墓碑 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_raw_add',target:m+' '+f+(c?' '+colorLabel(c):''),detail:(lang==='zh'?'原料入库 +':'Raw in +')+Math.round(w)+'kg'});
   saveState(); renderInventory(); toast(lang==='zh'?'已增加原料库存':'Raw stock added');
@@ -3129,19 +3132,19 @@ function addPelletStock(){
   if(!(bags>0)){toast(lang==='zh'?'请输入有效袋数':'Enter valid bags');return;}
   const key=m+'|'+c;
   invAdjust[key]=(invAdjust[key]||0)+bags;
+  clearInvDeleted('pellet',key); /* 重新入库则解除该键的删除墓碑 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_pellet_add',target:m+' '+(c?colorLabel(c):''),detail:(lang==='zh'?'成品入库 +':'Finished in +')+bags+unitBag()});
   saveState(); renderInventory(); toast(lang==='zh'?'已增加成品库存':'Finished stock added');
 }
 
-function clearInvDeleted(kind,key){ if(invDeleted[kind]&&invDeleted[kind][key]!==undefined){ delete invDeleted[kind][key]; } }
+function clearInvDeleted(kind,key){ invDeleted[kind]=invDeleted[kind]||{}; invDeleted[kind][key]=0; /* 标记 ts=0 = 显式解除墓碑，推送后由服务端复活该键（普通同步不会误清墓碑） */ }
 function deleteInvEntry(kind,key){
   if(!can('data.reset')){toast(lang==='zh'?'无库存删除权限（仅老板）':'No permission (boss only)');return;}
   if(!confirm(lang==='zh'?'确认删除该库存条目？此操作不可恢复。':'Delete this stock entry? Cannot undo.'))return;
-  let removed=false;
-  if(kind==='raw'){ if(invAdjustRaw[key]!==undefined){delete invAdjustRaw[key];removed=true;} if(invRawEdit[key]!==undefined){delete invRawEdit[key];removed=true;} }
-  else { if(invAdjust[key]!==undefined){delete invAdjust[key];removed=true;} if(invPelletEdit[key]!==undefined){delete invPelletEdit[key];removed=true;} }
-  if(!removed){toast(lang==='zh'?'该库存由业务记录回放得出，无法在此删除（请修改对应业务记录）':'This stock is derived from records; edit the source record instead');return;}
+  /* 清除人工调整项；同时写墓碑：业务记录回放得出的库存行也通过墓碑在界面与同步中隐藏，杜绝"删了又回来" */
+  if(kind==='raw'){ if(invAdjustRaw[key]!==undefined){delete invAdjustRaw[key];} if(invRawEdit[key]!==undefined){delete invRawEdit[key];} }
+  else { if(invAdjust[key]!==undefined){delete invAdjust[key];} if(invPelletEdit[key]!==undefined){delete invPelletEdit[key];} }
   invDeleted[kind]=invDeleted[kind]||{}; invDeleted[kind][key]=Date.now(); /* 库存删除墓碑：随 push 传播、pull 强制剔除，防复活 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_inv_del',target:key,detail:(lang==='zh'?'删除库存条目 ':'deleted stock entry ')+key});
@@ -3470,7 +3473,7 @@ function syncPull(){
       settings.lastSync=nowStr();
       // 用服务端权威时间作为下次增量基线，避免客户端时钟偏差导致漏拉
       settings.lastSyncTs = j.serverTime || Date.now();
-      saveState(); refreshAfterSave(); renderCustomers(); renderAccounts(); renderFinance(); updateSyncUI();
+      saveState(); refreshAfterSave(); renderCustomers(); renderAccounts(); renderFinance(); renderInventory(); updateSyncUI();
       return true;
     }).catch(e=>{ console.warn('syncPull failed',e); return false; });
 }
