@@ -3413,7 +3413,7 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
     if(idx<0){ users.push(ru); }
     else if((ru.updatedTs||0) > (users[idx].updatedTs||0)){ users[idx]=ru; }
   });
-  (remoteDelUsers||[]).forEach(un=>{ if(un===currentUser&&currentUser.username==='boss')return; if(users.some(u=>u.username===un&&u.role==='boss'))return; users=users.filter(u=>u.username!==un); if(deletedUsers.indexOf(un)<0)deletedUsers.push(un); });
+  (remoteDelUsers||[]).forEach(un=>{ if(un===currentUser.username)return; users=users.filter(u=>u.username!==un); if(deletedUsers.indexOf(un)<0)deletedUsers.push(un); });
   /* ---- 客户同步：按 id 做 LWW，使分厂录入的客户可在老板账号查看 ---- */
   const cmap={}; customers.forEach(c=>{cmap[c.id]=c;});
   (remoteCustomers||[]).forEach(rc=>{
@@ -3870,15 +3870,28 @@ function submitAcct(){
   if(!username||!name){if(msg)msg.textContent=lang==='zh'?'请填写账号与姓名':'Enter account & name';return;}
   if(factories.length===0){if(msg)msg.textContent=lang==='zh'?'请至少选择一个工厂':'Pick at least one plant';return;}
   if(editingAcct && editingAcct===username){
-    /* 老板赋权：更新已有账号角色/工厂，密码留空则不变 */
+    /* 老板赋权：更新已有账号角色/工厂/密码——服务端权威，确保换设备即时同步 */
     const u=users.find(x=>x.username===username);if(!u){if(msg)msg.textContent=lang==='zh'?'账号不存在':'Account not found';return;}
-    if(pass){ if(!passwordStrong(pass)){if(msg)msg.textContent=lang==='zh'?'密码需≥8位且含字母与数字':'Password >=8 chars with letters & digits';return;} const salt=genSalt(); u.salt=salt; u.passwordHash=hashPassword(pass,salt); u.mustChange=true; }
-    u.name=name; u.role=role; u.factories=factories.slice(); u.updatedTs=Date.now();
-    settings.pending=(settings.pending||0)+1;
-    auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_edit',target:username,detail:lang==='zh'?'赋权 · '+name+' · '+role:'grant · '+name+' · '+role});
-    saveState();renderAccounts();updateSyncUI();
-    toast(lang==='zh'?'已更新账号权限':'Permissions updated');
-    closeAcctModal();
+    if(pass && !passwordStrong(pass)){if(msg)msg.textContent=lang==='zh'?'密码需≥8位且含字母与数字':'Password >=8 chars with letters & digits';return;}
+    const body={name:name,role:role,factories:factories.slice()}; if(pass)body.password=pass;
+    const applyLocal=()=>{
+      if(pass){ const salt=genSalt(); u.salt=salt; u.passwordHash=hashPassword(pass,salt); u.mustChange=true; }
+      u.name=name; u.role=role; u.factories=factories.slice(); u.updatedTs=Date.now();
+      settings.pending=(settings.pending||0)+1;
+      auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_edit',target:username,detail:lang==='zh'?'赋权 · '+name+' · '+role:'grant · '+name+' · '+role});
+      saveState();renderAccounts();updateSyncUI();syncPush();
+      toast(lang==='zh'?'已更新账号权限':'Permissions updated');
+      closeAcctModal();
+    };
+    if(typeof fetch==='function' && authToken){
+      apiReq('/api/accounts/'+encodeURIComponent(username),{method:'PUT',body:JSON.stringify(body)})
+        .then(j=>{
+          if(j.ok && j.body.ok){ applyLocal(); if(j.body.user)mergeServerUser(j.body.user); }
+          else { if(msg)msg.textContent=(j.body&&j.body.error)?(lang==='zh'?'更新失败：'+j.body.error:'Update failed: '+j.body.error):(lang==='zh'?'更新失败':'Update failed'); }
+        }).catch(()=>{ applyLocal(); });
+      return;
+    }
+    applyLocal();
     return;
   }
   if(users.some(u=>u.username===username)){if(msg)msg.textContent=lang==='zh'?'该账号已存在，请更换':'Account exists';return;}
@@ -3891,7 +3904,7 @@ function submitAcct(){
         if(j.ok && j.body.ok){
           mergeServerUser({username,name,role,factories:factories.slice(),mustChange:true});
           auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_create',target:username,detail:lang==='zh'?'新增账号 · '+name+' · '+role:'new account · '+name+' · '+role});
-          saveState();renderAccounts();updateSyncUI();
+          saveState();renderAccounts();updateSyncUI();syncPush();
           toast(lang==='zh'?'账号已创建（初始密码需首次登录修改）':'Account created');
           closeAcctModal();
         } else {
@@ -3954,14 +3967,15 @@ function renderAnnouncements(){
 function deleteAccount(username){
   if(!can('account.manage')){toast(lang==='zh'?'无账号管理权限（仅老板）':'No permission (boss only)');return;}
   const u=users.find(x=>x.username===username);if(!u)return;
-  if(u.role==='boss'){toast(lang==='zh'?'不能删除老板账号':'Cannot delete boss');return;}
+  /* 保护：不允许删除最后一个老板/开发管理员，避免账号系统锁死；其余（含新建老板）均可删 */
+  if((u.role==='boss'||u.role==='devAdmin') && users.filter(x=>x.role===u.role).length<=1){ toast(lang==='zh'?'不能删除最后一个'+(roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role)+'账号':'Cannot delete the last '+u.role); return; }
   if(!confirm(lang==='zh'?`确认删除账号 ${username}？`:`Delete ${username}?`))return;
   const done=()=>{
     users=users.filter(x=>x.username!==username);
     if(deletedUsers.indexOf(username)<0)deletedUsers.push(username);
     settings.pending=(settings.pending||0)+1;
     auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:username,detail:lang==='zh'?'删除账号':'deleted account'});
-    saveState();renderAccounts();updateSyncUI();
+    saveState();renderAccounts();updateSyncUI();syncPush();
     toast(lang==='zh'?'账号已删除':'Account deleted');
   };
   /* 在线删除：服务端权威 */

@@ -240,7 +240,8 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
    不得将其复活——这是修复「老板删除后被同步复原」的关键。 */
 function mergeRecord(rec) {
   if (!rec || rec.id == null) return;
-  if (deleted.indexOf(rec.id) >= 0) return; // 墓碑中的记录永不复活
+  // 墓碑中的记录永不复活；deleted 为 {id,ts} 对象数组，必须用 some 匹配（早先用 indexOf 对对象数组恒为 -1，导致删除被同步复活）
+  if (deleted.some(t => t.id === rec.id)) return;
   const cur = ledger[rec.id];
   const ts = rec.ts || 0, rev = rec.rev || 0;
   const cts = cur ? (cur.ts || 0) : -1, crev = cur ? (cur.rev || 0) : -1;
@@ -251,21 +252,21 @@ function mergeRecord(rec) {
 /* 账号合并：按 username 做 LWW（updatedTs 大者胜），使新账号可在任意设备登录 */
 function mergeUser(u) {
   if (!u || u.username == null) return;
-  if (deletedUsers.indexOf(u.username) >= 0) return;
+  if (deletedUsers.some(t => t.id === u.username)) return;
   const cur = usersById[u.username];
   if (!cur || (u.updatedTs || 0) > (cur.updatedTs || 0)) usersById[u.username] = u;
 }
 /* 客户合并：按 id 做 LWW（updatedTs 大者胜），使分厂客户可在老板账号查看 */
 function mergeCustomer(c) {
   if (!c || c.id == null) return;
-  if (deletedCustomers.indexOf(c.id) >= 0) return;
+  if (deletedCustomers.some(t => t.id === c.id)) return;
   const cur = customersById[c.id];
   if (!cur || (c.updatedTs || 0) > (cur.updatedTs || 0)) customersById[c.id] = c;
 }
 /* 财务合并：按 id 做 LWW（ts 大者胜），使三厂财务可在老板账号全局汇总 */
 function mergeFinance(f) {
   if (!f || f.id == null) return;
-  if (deletedFinances.indexOf(f.id) >= 0) return;
+  if (deletedFinances.some(t => t.id === f.id)) return;
   const cur = financesById[f.id];
   if (!cur || (f.ts || 0) > (cur.ts || 0)) financesById[f.id] = f;
 }
@@ -386,7 +387,7 @@ const server = http.createServer(async (req, res) => {
     sendJSON(res, 200, { ok: true, user: publicUser(accounts[username]) }, req);
     return;
   }
-  // 删除账号（需 account.manage；保护 boss/devAdmin）
+  // 删除账号（需 account.manage；仅保护最后一个老板/开发管理员，避免账号系统锁死）
   if (p.startsWith('/api/accounts/') && req.method === 'DELETE') {
     const a = authUser(req);
     if (!a) { sendJSON(res, 401, { ok: false, error: 'unauthorized' }, req); return; }
@@ -394,10 +395,41 @@ const server = http.createServer(async (req, res) => {
     const target = decodeURIComponent(p.slice('/api/accounts/'.length));
     const t = accounts[target];
     if (!t || t.deleted) { sendJSON(res, 404, { ok: false, error: 'not_found' }, req); return; }
-    if (t.role === 'boss' || t.role === 'devAdmin') { sendJSON(res, 400, { ok: false, error: 'protected' }, req); return; }
+    // 仅当该角色（boss/devAdmin）仅剩最后一位时才阻止删除；其余（含新建的老板账号）均允许删除
+    if ((t.role === 'boss' || t.role === 'devAdmin') && Object.values(accounts).filter(x => !x.deleted && x.role === t.role).length <= 1) {
+      sendJSON(res, 400, { ok: false, error: 'protected_last' }, req); return;
+    }
     t.deleted = true; t.updatedTs = Date.now();
     persist();
     sendJSON(res, 200, { ok: true }, req);
+    return;
+  }
+  // 更新账号（需 account.manage；老板赋权/改密，服务端权威，确保换设备即时同步）
+  if (p.startsWith('/api/accounts/') && req.method === 'PUT') {
+    const a = authUser(req);
+    if (!a) { sendJSON(res, 401, { ok: false, error: 'unauthorized' }, req); return; }
+    if (!can(a.role, 'account.manage')) { sendJSON(res, 403, { ok: false, error: 'forbidden' }, req); return; }
+    const target = decodeURIComponent(p.slice('/api/accounts/'.length));
+    const t = accounts[target];
+    if (!t || t.deleted) { sendJSON(res, 404, { ok: false, error: 'not_found' }, req); return; }
+    let b; try { b = await readBody(req); } catch (e) { sendJSON(res, 400, { ok: false, error: 'bad json' }, req); return; }
+    if (b.role && b.role !== t.role) {
+      if ((t.role === 'boss' || t.role === 'devAdmin') && Object.values(accounts).filter(x => !x.deleted && x.role === t.role).length <= 1) {
+        sendJSON(res, 400, { ok: false, error: 'protected_last' }, req); return;
+      }
+      if (!['boss', 'devAdmin', 'factoryAdmin', 'registrar', 'auditor'].includes(b.role)) { sendJSON(res, 400, { ok: false, error: 'bad_role' }, req); return; }
+      t.role = b.role;
+    }
+    if (b.name != null && ('' + b.name).trim()) t.name = ('' + b.name).trim();
+    if (Array.isArray(b.factories) && b.factories.length) t.factories = b.factories.slice();
+    if (b.password) {
+      if (!passwordStrong(b.password)) { sendJSON(res, 400, { ok: false, error: 'weak' }, req); return; }
+      const salt = genSaltHex();
+      t.salt = salt; t.passwordHash = hashPassword(b.password, salt); t.mustChange = true;
+    }
+    t.updatedTs = Date.now();
+    persist();
+    sendJSON(res, 200, { ok: true, user: publicUser(t) }, req);
     return;
   }
 
