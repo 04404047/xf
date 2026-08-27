@@ -205,7 +205,8 @@ function sendJSON(res, code, obj, req) {
   const body = JSON.stringify(obj);
   const headers = {
     'Content-Type': 'application/json; charset=utf-8',
-    'Vary': 'Origin'
+    'Vary': 'Origin',
+    'Cache-Control': 'no-store' // 禁止缓存同步 API 响应，避免 /sync/pull 返回陈旧数据导致"清缓存前数据不同步"
   };
   // 同源/白名单来源才回显；否则置 'null' 由浏览器拒绝跨站访问
   headers['Access-Control-Allow-Origin'] = origin || 'null';
@@ -497,11 +498,31 @@ const server = http.createServer(async (req, res) => {
 });
 
 function serveFile(res, file, req) {
-  fs.readFile(file, (err, data) => {
+  fs.stat(file, (err, st) => {
     if (err) { sendJSON(res, 404, { ok: false, error: 'file not found' }, req); return; }
     const ext = path.extname(file).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(data);
+    const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+    // SPA 外壳（html/js/css）禁止强缓存：每次请求都向服务器校验；
+    // 重新部署后文件 mtime 变化即返回最新内容，用户无需手动清浏览器缓存。
+    if (ext === '.html' || ext === '.js' || ext === '.css') {
+      headers['Cache-Control'] = 'no-cache';
+      headers['Last-Modified'] = st.mtime.toUTCString();
+      const inmMs = req.headers['if-modified-since'] ? Date.parse(req.headers['if-modified-since']) : NaN;
+      // 以秒为粒度比较（Last-Modified/If-Modified-Since 仅秒精度）：未变化则回 304，已重新部署（mtime 进入新秒）则回 200 最新内容
+      if (!isNaN(inmMs) && Math.floor(inmMs / 1000) >= Math.floor(st.mtimeMs / 1000)) {
+        res.writeHead(304, headers);
+        res.end();
+        return;
+      }
+    } else {
+      // 图片等静态资源可短期缓存（内容通常不随部署变化）
+      headers['Cache-Control'] = 'public, max-age=86400';
+    }
+    fs.readFile(file, (e2, data) => {
+      if (e2) { sendJSON(res, 404, { ok: false, error: 'file not found' }, req); return; }
+      res.writeHead(200, headers);
+      res.end(data);
+    });
   });
 }
 
