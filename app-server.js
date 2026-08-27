@@ -49,6 +49,9 @@ let invAdjust = {};
 let invAdjustRaw = {};
 let invRawEdit = {};
 let invPelletEdit = {};
+/* 库存删除墓碑：kind -> {key: deleteTs}。让"删除库存条目"跨设备生效、且不被合并存储复活
+   （被删的键在 push 中 absent，Object.assign 合并不会移除它，必须由墓碑显式剔除）。 */
+let invDeleted = { raw:{}, pellet:{} };
 /* 账号「服务端权威」主数据：username -> {username,name,role,factories,salt,passwordHash,mustChange,updatedTs,deleted}
    所有登录/改密/建号均由服务器落盘，天然跨设备一致（彻底根治党本"换设备登不上/改密不生效"）。
    注意：与 usersById 并存；usersById 保留仅用于旧版业务同步兼容，不参与登录校验。 */
@@ -80,6 +83,7 @@ try {
     if (d.invAdjustRaw && typeof d.invAdjustRaw === 'object') invAdjustRaw = d.invAdjustRaw;
     if (d.invRawEdit && typeof d.invRawEdit === 'object') invRawEdit = d.invRawEdit;
     if (d.invPelletEdit && typeof d.invPelletEdit === 'object') invPelletEdit = d.invPelletEdit;
+    if (d.invDeleted && typeof d.invDeleted === 'object') invDeleted = { raw: (d.invDeleted.raw || {}), pellet: (d.invDeleted.pellet || {}) };
     console.log('[sync] 已载入本地账本：%d 条记录，%d 条删除墓碑；账号 %d；客户 %d；财务 %d',
       Object.keys(ledger).length, deleted.length, Object.keys(usersById).length, Object.keys(customersById).length, Object.keys(financesById).length);
   }
@@ -174,7 +178,7 @@ function persist() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit }, null, 0);
+    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
     const packed = encryptData(plain);
     const tmp = DATA_FILE + '.tmp';
     /* 先写临时文件再原子 rename，避免进程崩溃/断电时损坏数据文件 */
@@ -264,6 +268,15 @@ function mergeFinance(f) {
   if (deletedFinances.indexOf(f.id) >= 0) return;
   const cur = financesById[f.id];
   if (!cur || (f.ts || 0) > (cur.ts || 0)) financesById[f.id] = f;
+}
+/* 库存合并（带删除墓碑拦截）：等价于 Object.assign 的"加/覆盖"，但跳过已被 invDeleted 标记删除的键，
+   确保某设备在被删后、尚未拉取墓碑前再次 push 旧键时，服务端不会将其复活。 */
+function mergeInv(target, src, kind) {
+  if (!src || typeof src !== 'object') return;
+  Object.keys(src).forEach(function (k) {
+    if (invDeleted[kind] && (invDeleted[kind][k] || 0) > 0) return;
+    target[k] = src[k];
+  });
 }
 
 /* ---------- 账号权威：Token 与鉴权 ---------- */
@@ -432,10 +445,24 @@ const server = http.createServer(async (req, res) => {
     }
     if (body.products && typeof body.products === 'object' && Object.keys(body.products).length) products = body.products;
     if (Array.isArray(body.priceHist)) priceHist = body.priceHist;
-    if (body.invAdjust && typeof body.invAdjust === 'object') Object.assign(invAdjust, body.invAdjust);
-    if (body.invAdjustRaw && typeof body.invAdjustRaw === 'object') Object.assign(invAdjustRaw, body.invAdjustRaw);
-    if (body.invRawEdit && typeof body.invRawEdit === 'object') Object.assign(invRawEdit, body.invRawEdit);
-    if (body.invPelletEdit && typeof body.invPelletEdit === 'object') Object.assign(invPelletEdit, body.invPelletEdit);
+    /* 库存删除墓碑：被删的键在 push body 中 absent，Object.assign 合并不会移除它，
+       故先依据 invDeleted 显式剔除（删除时间戳>0 才生效，取较新者），并阻止后续合并重新加回。 */
+    const incInvDeleted = (body.invDeleted && typeof body.invDeleted === 'object') ? body.invDeleted : {};
+    ['raw', 'pellet'].forEach(function (kind) {
+      const rk = incInvDeleted[kind] || {};
+      Object.keys(rk).forEach(function (key) {
+        const ts = rk[key] || 0;
+        if (ts <= 0) return;
+        if (kind === 'raw') { delete invAdjustRaw[key]; delete invRawEdit[key]; delete body.invAdjustRaw[key]; delete body.invRawEdit[key]; }
+        else { delete invAdjust[key]; delete invPelletEdit[key]; delete body.invAdjust[key]; delete body.invPelletEdit[key]; }
+        invDeleted[kind] = invDeleted[kind] || {};
+        if ((invDeleted[kind][key] || 0) < ts) invDeleted[kind][key] = ts;
+      });
+    });
+    if (body.invAdjust && typeof body.invAdjust === 'object') mergeInv(invAdjust, body.invAdjust, 'pellet');
+    if (body.invAdjustRaw && typeof body.invAdjustRaw === 'object') mergeInv(invAdjustRaw, body.invAdjustRaw, 'raw');
+    if (body.invRawEdit && typeof body.invRawEdit === 'object') mergeInv(invRawEdit, body.invRawEdit, 'raw');
+    if (body.invPelletEdit && typeof body.invPelletEdit === 'object') mergeInv(invPelletEdit, body.invPelletEdit, 'pellet');
     persist();
     sendJSON(res, 200, { ok: true, serverTime: Date.now(), count: Object.keys(ledger).length }, req);
     return;
@@ -474,7 +501,8 @@ const server = http.createServer(async (req, res) => {
       invAdjust: invAdjust,
       invAdjustRaw: invAdjustRaw,
       invRawEdit: invRawEdit,
-      invPelletEdit: invPelletEdit
+      invPelletEdit: invPelletEdit,
+      invDeleted: invDeleted
     }, req);
     return;
   }

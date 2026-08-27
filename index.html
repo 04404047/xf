@@ -1685,6 +1685,7 @@ let invAdjust = {}; // 成品库存校正（袋）：'材质|颜色' -> 相对�
 let invAdjustRaw = {}; // 原料库存校正（kg）：'材质|形态' -> 相对计算值的 kg 偏移（老板可编辑）
 let invRawEdit = {}; // 原料库存自由编辑覆盖（老板）：'材质|形态' -> {m,f,w} 绝对有效值
 let invPelletEdit = {}; // 成品库存自由编辑覆盖（老板）：'材质|颜色' -> {m,c,bags} 绝对有效值
+let invDeleted = { raw:{}, pellet:{} }; // 库存删除墓碑：kind -> key -> 删除时间戳(ms)。防止本地删除后被同步拉取再次合并复活（跨设备一致）
 var expandedRecDates = {};   // 回收单：已展开的日期（其余日期折叠为总结框）
 var expandedProdDates = {};  // 生产记录：已展开的日期
 /* 财务记录：三厂独立录入、老板可全局汇总。
@@ -1732,7 +1733,7 @@ function toast(msg){
 
 /* ============ State persistence ============ */
 function saveState(){
-  Store.set(STATE_KEY,{customers,priceBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances});
+  Store.set(STATE_KEY,{customers,priceBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,invDeleted,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances});
   scheduleAutoSync();
 }
 function loadState(){
@@ -1761,6 +1762,7 @@ function loadState(){
   if(s.invAdjustRaw&&typeof s.invAdjustRaw==='object')invAdjustRaw=s.invAdjustRaw;
   if(s.invRawEdit&&typeof s.invRawEdit==='object')invRawEdit=s.invRawEdit;
   if(s.invPelletEdit&&typeof s.invPelletEdit==='object')invPelletEdit=s.invPelletEdit;
+  if(s.invDeleted&&typeof s.invDeleted==='object'){ invDeleted={raw:(s.invDeleted.raw||{}),pellet:(s.invDeleted.pellet||{})}; }
   if(Array.isArray(s.deletedGids))deletedGids=s.deletedGids.slice();
   if(Array.isArray(s.deletedUsers))deletedUsers=s.deletedUsers.slice();
   if(Array.isArray(s.deletedCustomers))deletedCustomers=s.deletedCustomers.slice();
@@ -3017,7 +3019,7 @@ function renderSell(){
 
 /* ===== Inventory ===== */
 function saveInvAdjust(key,bags){const fac=effectiveFactory();const pel=flattenPellet(computeInventory(fac));const base=Math.round((pel[key]||0)/BAG_KG);invAdjust[key]=Math.max(0,Math.round(bags))-base;settings.pending=(settings.pending||0)+1;saveState();refreshAfterSave();toast(lang==='zh'?'库存已校正':'Stock adjusted');}
-function saveInvAdjustRaw(key,kg){const fac=effectiveFactory();const fr=flattenRaw(computeInventory(fac));const base=Math.round(fr[key]||0);invAdjustRaw[key]=Math.max(0,Math.round(kg))-base;settings.pending=(settings.pending||0)+1;saveState();refreshAfterSave();toast(lang==='zh'?'原料库存已校正':'Raw stock adjusted');}
+function saveInvAdjustRaw(key,kg){const fac=effectiveFactory();const fr=flattenRaw(computeInventory(fac));const base=Math.round(fr[key]||0);invAdjustRaw[key]=Math.max(0,Math.round(kg))-base;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();refreshAfterSave();toast(lang==='zh'?'原料库存已校正':'Raw stock adjusted');}
 /* 原料库存自由编辑：覆盖材质/形态/重量（老板），便于修正回放口径与标签 */
 function editRawInv(key,field,val){
   if(currentRole!=='boss')return;
@@ -3025,7 +3027,7 @@ function editRawInv(key,field,val){
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='f')ov.f=String(val||'').trim();
   else if(field==='w')ov.w=Math.max(0,Math.round(+val||0));
-  invRawEdit[key]=ov;settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  invRawEdit[key]=ov;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
 }
 /* 成品库存自由编辑：覆盖材质/颜色/袋数（老板） */
@@ -3035,7 +3037,7 @@ function editPelletInv(key,field,val){
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='c')ov.c=String(val||'').trim();
   else if(field==='bags')ov.bags=Math.max(0,Math.round(+val||0));
-  invPelletEdit[key]=ov;settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  invPelletEdit[key]=ov;clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
 }
 function renderInventory(){
@@ -3132,6 +3134,7 @@ function addPelletStock(){
   saveState(); renderInventory(); toast(lang==='zh'?'已增加成品库存':'Finished stock added');
 }
 
+function clearInvDeleted(kind,key){ if(invDeleted[kind]&&invDeleted[kind][key]!==undefined){ delete invDeleted[kind][key]; } }
 function deleteInvEntry(kind,key){
   if(!can('data.reset')){toast(lang==='zh'?'无库存删除权限（仅老板）':'No permission (boss only)');return;}
   if(!confirm(lang==='zh'?'确认删除该库存条目？此操作不可恢复。':'Delete this stock entry? Cannot undo.'))return;
@@ -3139,6 +3142,7 @@ function deleteInvEntry(kind,key){
   if(kind==='raw'){ if(invAdjustRaw[key]!==undefined){delete invAdjustRaw[key];removed=true;} if(invRawEdit[key]!==undefined){delete invRawEdit[key];removed=true;} }
   else { if(invAdjust[key]!==undefined){delete invAdjust[key];removed=true;} if(invPelletEdit[key]!==undefined){delete invPelletEdit[key];removed=true;} }
   if(!removed){toast(lang==='zh'?'该库存由业务记录回放得出，无法在此删除（请修改对应业务记录）':'This stock is derived from records; edit the source record instead');return;}
+  invDeleted[kind]=invDeleted[kind]||{}; invDeleted[kind][key]=Date.now(); /* 库存删除墓碑：随 push 传播、pull 强制剔除，防复活 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_inv_del',target:key,detail:(lang==='zh'?'删除库存条目 ':'deleted stock entry ')+key});
   saveState();renderInventory();toast(lang==='zh'?'已删除库存条目':'Stock entry deleted');
@@ -3379,7 +3383,8 @@ function syncPush(){
     invAdjust:invAdjust,
     invAdjustRaw:invAdjustRaw,
     invRawEdit:invRawEdit,
-    invPelletEdit:invPelletEdit
+    invPelletEdit:invPelletEdit,
+    invDeleted:invDeleted
   });
   return fetch(SYNC.url()+'/sync/push',{method:'POST',headers:SYNC.headers(),body})
     .then(r=>r.json()).then(j=>{
@@ -3387,7 +3392,7 @@ function syncPush(){
       return !!(j&&j.ok);
     }).catch(e=>{ console.warn('syncPush failed',e); return false; });
 }
-function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances, remotePriceBy, remoteProducts, remotePriceHist, remoteInvAdjust, remoteInvAdjustRaw, remoteInvRawEdit, remoteInvPelletEdit){
+function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances, remotePriceBy, remoteProducts, remotePriceHist, remoteInvAdjust, remoteInvAdjustRaw, remoteInvRawEdit, remoteInvPelletEdit, remoteInvDeleted){
   const map={}; records.forEach(r=>{map[r.id]=r;});
   (remoteRecs||[]).forEach(rr=>{
     if(rr.id==null)return;
@@ -3436,6 +3441,18 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
   if(remoteInvAdjustRaw&&typeof remoteInvAdjustRaw==='object')Object.assign(invAdjustRaw,remoteInvAdjustRaw);
   if(remoteInvRawEdit&&typeof remoteInvRawEdit==='object')Object.assign(invRawEdit,remoteInvRawEdit);
   if(remoteInvPelletEdit&&typeof remoteInvPelletEdit==='object')Object.assign(invPelletEdit,remoteInvPelletEdit);
+  /* 库存删除墓碑：先合并远端墓碑到本地（取较新时间戳），再强制剔除已删键——这是修复"删除几秒后复活"的关键：
+     服务端对库存 map 是合并存储，被删的键不会因 push 中 absent 而消失；必须由墓碑在每次 pull 后显式剔除。 */
+  if(remoteInvDeleted&&typeof remoteInvDeleted==='object'){
+    ['raw','pellet'].forEach(function(kind){
+      const rk=remoteInvDeleted[kind]||{};
+      Object.keys(rk).forEach(function(k){ const ts=rk[k]||0; if(ts>0){ invDeleted[kind]=invDeleted[kind]||{}; if((invDeleted[kind][k]||0)<ts)invDeleted[kind][k]=ts; } });
+    });
+  }
+  ['raw','pellet'].forEach(function(kind){
+    const dk=invDeleted[kind]||{};
+    Object.keys(dk).forEach(function(k){ const ts=dk[k]||0; if(ts>0){ if(kind==='raw'){delete invAdjustRaw[k];delete invRawEdit[k];} else {delete invAdjust[k];delete invPelletEdit[k];} } });
+  });
   /* 同步后，若当前登录账号对象被替换，重新指向最新引用，避免会话 stale */
   if(currentUser){ const fresh=users.find(u=>u.username===currentUser.username); if(fresh)currentUser=fresh; }
 }
@@ -3446,7 +3463,7 @@ function syncPull(){
   return fetch(SYNC.url()+'/sync/pull?since='+since,{headers:SYNC.headers()})
     .then(r=>r.json()).then(j=>{
       if(!j||!j.records) return false;
-      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[], j.priceBy, j.products, j.priceHist, j.invAdjust, j.invAdjustRaw, j.invRawEdit, j.invPelletEdit);
+      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[], j.priceBy, j.products, j.priceHist, j.invAdjust, j.invAdjustRaw, j.invRawEdit, j.invPelletEdit, j.invDeleted);
       /* 数据互通：拉取后重新校验「发货→总厂入库」配对，确保总厂始终有可确认的来料入库单
          （分厂发货在分厂本地生成入库单可能因未同步而不到达总厂，此处以总厂本地补齐） */
       reconcileAll();
@@ -3961,6 +3978,7 @@ function resetAllData(){
   records=[];
   customers.forEach(c=>{c.kg=0;c.amt=0;c.last='';});
   invAdjust={};invAdjustRaw={};invRawEdit={};invPelletEdit={};
+  invDeleted={raw:{},pellet:{}};
   settings.pending=0;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_reset',target:'ALL',detail:lang==='zh'?'数据归零':'data reset'});
   saveState();refreshAfterSave();
@@ -3977,9 +3995,10 @@ function resetSelectedData(cat){
   if(!confirm(lang==='zh'?`确认归零「${catName}」？此操作不可恢复。`:`Reset ${catName}? Cannot undo.`))return;
   if(cat==='InvPellet'){
     invAdjust={}; invPelletEdit={};
+    invDeleted.pellet={};
   } else {
     const removed = records.filter(r=>r.ty===cat);
-    if(cat==='ALL'){ records=[]; customers.forEach(c=>{c.kg=0;c.amt=0;c.last='';}); invAdjust={};invAdjustRaw={}; invRawEdit={}; invPelletEdit={}; }
+    if(cat==='ALL'){ records=[]; customers.forEach(c=>{c.kg=0;c.amt=0;c.last='';}); invAdjust={};invAdjustRaw={}; invRawEdit={}; invPelletEdit={}; invDeleted={raw:{},pellet:{}}; }
     else { records=records.filter(r=>r.ty!==cat); recomputeCustomerTotals(); }
     removed.forEach(r=>addTomb(r.id, currentRole)); /* 分类删除也走墓碑，跨设备生效 */
   }
