@@ -2,7 +2,12 @@
 <html lang="zh-CN" data-page-node-id="knYErYAwqvxUckptu9jYQv">
 <head data-page-node-id="TqsTQMdq3QQJNyf4nFoTEP">
 <meta charset="UTF-8" data-page-node-id="AN1sdPvPF9nXA3xxJZSEl0" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="5cK15K3Nq2uzbG4hMA1bFf" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="5cK15K3Nq2uzbG4hMA1bFf" />
+<!-- CSP 兜底：app-server.js 已发同源安全头，这里保证用 file:// 打开或挂到别的静态服务器时同样生效。
+     页面为全内联单文件，故必须允许 'unsafe-inline'；但 default-src 'self' + object-src 'none'
+     足以挡掉「注入外链脚本把账本传出去」这类最常见的打法。meta 不支持 frame-ancestors，由服务端头负责。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'" />
+<meta name="referrer" content="no-referrer" />
 <title>RecycleFlow NG — 废旧塑料回收工厂收发管理</title>
 <style>
   :root{
@@ -31,13 +36,13 @@
   .login-card .btn:active{transform:translateY(1px) scale(.99);}
   .brand-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--eco),#22c55e);margin-right:9px;box-shadow:0 0 0 3px rgba(22,163,74,.18);}
   .login-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
-  /* 密码框显示/隐藏切换 + 记住账号密码 */
+  /* 密码框显示/隐藏切换 + 记住账号 */
   .pwd-wrap{position:relative;}
   .pwd-wrap input{padding-right:40px;}
   .pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px;line-height:1;padding:4px;color:var(--muted);}
   .pwd-toggle:hover{color:var(--primary);}
   .remember{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:12px 0 2px;cursor:pointer;user-select:none;}
-  #app{display:none;height:100vh;}
+  #app{display:none;height:100vh;height:100dvh;}
   .sidebar{width:228px;background:linear-gradient(180deg,#0f172a,#0b1220);color:var(--side-ink);display:flex;flex-direction:column;height:100%;box-shadow:2px 0 18px rgba(15,23,42,.18);}
   .side-logo{padding:20px 18px 16px;font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;border-bottom:1px solid #1f2a3d;background:linear-gradient(90deg,rgba(37,99,235,.18),transparent);}
   .side-logo small{display:block;font-size:10px;color:#64748b;font-weight:500;margin-top:2px;letter-spacing:.6px;}
@@ -251,6 +256,24 @@
     .login-card label{margin:12px 0 5px;}
     .login-card .btn{margin-top:18px;padding:14px;font-size:15px;}
     .login-foot{margin-top:14px;flex-wrap:wrap;gap:8px;}
+
+    /* —— 移动端可用性基线 —— */
+    /* iOS Safari 在输入框字号 <16px 时会自动放大整页，且失焦后不还原，
+       现场工人录单数会被迫反复手动缩放，故移动端一律抬到 16px。 */
+    input,select,textarea{font-size:16px;padding:10px 12px;min-height:44px;}
+    .login-card input,.login-card select{font-size:16px;padding:13px 14px;min-height:48px;}
+    /* 手指点击区 ≥44px；行内次要按钮(.sm)放宽到 38px，否则表格行高会被撑爆 */
+    .btn{min-height:44px;}
+    .btn.sm{min-height:38px;padding:7px 13px;}
+    .nav a{min-height:46px;}
+    .lang-seg button{min-height:36px;}
+    /* iPhone 刘海与底部横条：不预留安全区会让底部按钮被系统手势条盖住 */
+    .topbar{padding-top:env(safe-area-inset-top);height:auto;min-height:58px;}
+    .content{padding-bottom:calc(14px + env(safe-area-inset-bottom));}
+    .sidebar{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
+    /* 宽表格横向滚动：由 JS 给表格套 .tbl-autox 外壳 */
+    .tbl-autox{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
+    .tbl-autox>table{min-width:640px;}
   }
   /* 回收单 / 生产记录：按日期分组，当日展开、其余折叠为总结框 */
   .grp-row{background:var(--bg-soft);cursor:pointer;transition:background .15s;}
@@ -282,7 +305,7 @@
       <input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()" data-page-node-id="nfqsf26MDSQvkRIvExV4zE"/>
       <button type="button" class="pwd-toggle" id="pwd-toggle" onclick="togglePwd()" title="显示/隐藏密码" aria-label="显示密码" data-page-node-id="zNZhaSDZQIEltDm5Gpsm05">👁</button>
     </div>
-    <label class="remember" data-page-node-id="jEjMaj3qQzpYEbEI7SCuwu"><input type="checkbox" id="li-remember" data-page-node-id="Q6s0j7DI9vKgHR5HQweC8I"/> <span data-i18n="liRemember" data-page-node-id="AFVDmECg0DCc2Yeslo3p9k">记住账号密码</span></label>
+    <label class="remember" data-page-node-id="jEjMaj3qQzpYEbEI7SCuwu"><input type="checkbox" id="li-remember" data-page-node-id="Q6s0j7DI9vKgHR5HQweC8I"/> <span data-i18n="liRemember" data-page-node-id="AFVDmECg0DCc2Yeslo3p9k">记住账号</span></label>
     <label data-i18n="liFactory" data-page-node-id="pmClNvij5rlZUXBPe1YJdy">工厂 / Plant</label>
     <select id="li-factory" data-page-node-id="CvnulveyD39JnjCHMrXUEH"><option value="" data-page-node-id="PpGH1R5gLmKM4TJgo84xMe">—</option></select>
     <div class="li-err" id="li-err" data-page-node-id="rt3OARp8dwNeih5SRvCpKO"></div>
@@ -851,7 +874,7 @@
           <button data-t="audit" onclick="setTab('audit',this)" data-i18n="set_audit" data-page-node-id="Ysqc2dbepbPBgdTrsnWZbW">审计日志</button>
           <button data-t="local" onclick="setTab('local',this)" data-i18n="set_local" data-page-node-id="W0MUTCxFxjOuAF73OaQXeX">本地化</button>
           <button data-t="accounts" onclick="setTab('accounts',this)" data-i18n="set_accounts" data-page-node-id="3BqXIIRjDRK615OImm2ITU">账号管理</button>
-          <button id="set-tab-rate" data-t="rate" data-perm="finance.manage" onclick="setTab('rate',this)" data-i18n="set_rate" data-page-node-id="2TvwTb60XbeSrQVk4x1whw">汇率兑换</button>
+          <button id="set-tab-rate" data-t="rate" onclick="setTab('rate',this)" data-i18n="set_rate" data-page-node-id="2TvwTb60XbeSrQVk4x1whw">汇率兑换</button>
         </div>
         <div id="tab-roles" class="panel" data-page-node-id="lvpEMHdkQ3NrNB03muzaJE"><div class="panel-head" data-page-node-id="Qqob9RqcDivYvQSzvaRYod"><h3 data-i18n="set_roles" data-page-node-id="MLgidDd2rdHA6BL5Sth9RP">角色与权限（RBAC）</h3></div>
           <div class="panel-body" style="padding:0" data-page-node-id="CcvCF6CSiOtlJHpJDotF5K"><table data-page-node-id="SBC2JxjGqPu9xJJTIbNlCF">
@@ -1466,13 +1489,56 @@ function clearSession(){try{localStorage.removeItem(SESSION_KEY);}catch(e){} cur
 
 /* —— HTML 转义（防 XSS） —— */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+/* ============ 事件委托：取代内联 onclick 字符串拼接 ============
+   旧写法 onclick="fn('${x}')" 是把数据拼进 JS 代码——数据里只要带一个引号就能注入任意脚本，
+   而且 esc() 在这里帮倒忙：&#39; 会被 HTML 解码回引号再执行。
+   改为 data-act + data-args 属性，由下面这一次全局委托统一分发：数据与代码彻底分离，无法注入。 */
+function act(fn){
+  var args=Array.prototype.slice.call(arguments,1);
+  return 'data-act="'+esc(fn)+'" data-args="'+esc(JSON.stringify(args))+'"';
+}
+function bindActions(){
+  if(window.__rfActionsBound)return; window.__rfActionsBound=true;
+  document.addEventListener('click',function(e){
+    var t=e.target; if(!t||!t.closest)return;
+    var el=t.closest('[data-act]'); if(!el)return;
+    var name=el.getAttribute('data-act');
+    var fn=window[name]; if(typeof fn!=='function')return;
+    var args=[];
+    try{ args=JSON.parse(el.getAttribute('data-args')||'[]'); }catch(err){ args=[]; }
+    if(!Array.isArray(args))args=[];
+    /* 行内编辑/删除按钮叠在「整行点击展开」的行上时，必须阻止冒泡，
+       否则点删除会顺带把分组折叠起来。原实现靠 onclick 里手写 event.stopPropagation()。 */
+    if(el.getAttribute('data-stop')){ if(e.stopPropagation)e.stopPropagation(); }
+    if(e.preventDefault)e.preventDefault();
+    try{ fn.apply(null,args.concat([el])); }catch(err){ if(window.console)console.error('[act]',name,err); }
+  },false);
+}
+bindActions();
 
 /* ===================== /SECURITY ===================== */
 
 /* ============ Storage ============ */
+/* 存储写满必须让用户立刻看见：静默失败会造成「点了保存、刷新后数据全没了」这种最难查的丢数据 */
+let storageFull=false;
+function onStorageFull(){
+  if(storageFull)return; storageFull=true;
+  var b=document.getElementById('storage-full-bar');
+  if(!b){
+    b=document.createElement('div'); b.id='storage-full-bar';
+    b.setAttribute('role','alert');
+    b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;background:#dc2626;color:#fff;padding:12px 16px;font-size:13px;line-height:1.6;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+    b.innerHTML='<b>'+(lang==='zh'?'浏览器存储已满，新的修改可能没有保存！':'Browser storage is full — recent changes may NOT be saved!')+'</b><br/>'+(lang==='zh'?'请立即到「设置 → 备份」导出备份，再清理旧的审计日志与历史单据。':'Export a backup now (Settings → Backup), then clean up old audit logs and records.');
+    if(document.body)document.body.appendChild(b);
+  }
+  b.style.display='block';
+}
 const Store={
   get(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}},
-  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){
+    var quota=e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
+    if(quota)onStorageFull();
+    return false;}}
 };
 const STATE_KEY="rf_state_v4";
 
@@ -1738,10 +1804,30 @@ function toast(msg){
 }
 
 /* ============ State persistence ============ */
-function saveState(){
+/* 审计日志上限：只增不减会撑爆 5MB 配额，进而触发上面的「存储已满」。
+   注意：tombMeta / deletedGids 绝不能裁剪——它们是删除防复活墓碑，删了会让已删记录被同步拉回来。 */
+const AUDIT_LOG_MAX=500;
+let saveStateTimer=null; const SAVE_STATE_DEBOUNCE_MS=300;
+function flushSaveState(){
+  if(saveStateTimer){clearTimeout(saveStateTimer);saveStateTimer=null;}
+  if(Array.isArray(auditLog)&&auditLog.length>AUDIT_LOG_MAX)auditLog.length=AUDIT_LOG_MAX;
   Store.set(STATE_KEY,{customers,priceBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,invDeleted,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances});
+}
+/* 防抖：一次业务操作常触发多次保存，每次都全量 stringify上千条记录会造成录入卡顿。
+   300ms 内合并为一次；页面隐藏/卸载前强制落盘，绝不会因防抖丢数据。 */
+function saveState(){
+  if(saveStateTimer)clearTimeout(saveStateTimer);
+  saveStateTimer=setTimeout(function(){ saveStateTimer=null; flushSaveState(); }, SAVE_STATE_DEBOUNCE_MS);
   scheduleAutoSync();
 }
+function installSaveFlushHooks(){
+  if(typeof window==='undefined')return;
+  var flush=function(){ if(saveStateTimer)flushSaveState(); };
+  window.addEventListener('pagehide',flush);
+  window.addEventListener('beforeunload',flush);
+  if(document.addEventListener)document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden')flush(); });
+}
+installSaveFlushHooks();
 function loadState(){
   const s=Store.get(STATE_KEY,null);
   if(s&&Array.isArray(s.users)&&s.users.length)users=s.users;
@@ -2007,10 +2093,10 @@ function renderToday(){
   todays.forEach(r=>{ if(!map[r.custId])map[r.custId]={id:r.custId,name:r.custName,w:0,a:0,n:0,cur:r.currency||'NGN'}; map[r.custId].w+=r.tw;map[r.custId].a+=toNGN(toCNY(r.ta,r.currency||'NGN'));map[r.custId].n++; });
   const rows=Object.values(map);
   set('td-sup',rows.length);
-  document.getElementById('td-cust').innerHTML=rows.length?rows.map(x=>`<tr style="cursor:pointer" onclick="openCustomer('${x.id}')"><td><b>${esc(x.name)}</b></td><td class="num">${x.n}</td><td class="num">${x.w.toLocaleString()}</td><td class="num">${fmtWithFx(x.a,'NGN')}</td><td><span class="link">${t('c_view')} →</span></td></tr>`).join(''):`<tr><td colspan="5" class="muted">${lang==='zh'?'无':'None'}</td></tr>`;
+  document.getElementById('td-cust').innerHTML=rows.length?rows.map(x=>`<tr style="cursor:pointer" ${act('openCustomer',x.id)}><td><b>${esc(x.name)}</b></td><td class="num">${x.n}</td><td class="num">${x.w.toLocaleString()}</td><td class="num">${fmtWithFx(x.a,'NGN')}</td><td><span class="link">${t('c_view')} →</span></td></tr>`).join(''):`<tr><td colspan="5" class="muted">${lang==='zh'?'无':'None'}</td></tr>`;
   document.getElementById('td-list').innerHTML=todays.length?todays.map(r=>{
     const mat=(r.items||[]).map(it=>`${esc(it.m)} ${esc(it.f)} ${esc(it.c)} ${(+it.w).toLocaleString()}kg`).join('<br/>');
-    return `<tr><td>${esc(r.ticket||'—')}</td><td>${esc(r.dt)}</td><td><b>${esc(r.custName)}</b></td><td class="muted">${mat}</td><td class="num">${r.tw.toLocaleString()}</td><td class="num">${fmtCur(r.ta,r.currency||'NGN')}</td><td><span class="link" onclick="viewRecord('${r.id}')">${t('c_view')}</span></td></tr>`;
+    return `<tr><td>${esc(r.ticket||'—')}</td><td>${esc(r.dt)}</td><td><b>${esc(r.custName)}</b></td><td class="muted">${mat}</td><td class="num">${r.tw.toLocaleString()}</td><td class="num">${fmtCur(r.ta,r.currency||'NGN')}</td><td><span class="link" ${act('viewRecord',r.id)}>${t('c_view')}</span></td></tr>`;
   }).join(''):`<tr><td colspan="7" class="muted">${lang==='zh'?'无':'None'}</td></tr>`;
 }
 
@@ -2019,12 +2105,12 @@ function renderCustomers(){
   const q=document.getElementById('cust-search').value.toLowerCase();
   const list=visibleCustomers().filter(c=>(!q||(c.name+' '+c.phone).toLowerCase().includes(q)));
   document.getElementById('cust-body').innerHTML=list.map(c=>{const st=custStatus(c);const avg=avgIntervalDays(c);const fac=FACTORIES[c.factory]?FACTORIES[c.factory].name:c.factory;const imp=(c.imprints&&c.imprints.length)?`<span class="tag t-dup" title="${t('c_imprint_tip')}">⚠ ${t('c_imprint')} · ${c.imprints.map(f=>FACTORIES[f]?FACTORIES[f].short:f).join('/')}</span>`:'';return `<tr>
-    <td><b>${esc(c.name)}</b><br/><span class="tag t-fac">${fac}</span>${imp}</td>
+    <td><b>${esc(c.name)}</b><br/><span class="tag t-fac">${esc(fac)}</span>${imp}</td>
     <td><span class="tag ${STATUS[st].cls}">${STATUS[st][lang]}</span></td>
     <td>${esc(c.phone)}</td><td>${esc(c.bank)}</td><td>${esc(c.acct)}</td>
     <td class="num">${c.kg.toLocaleString()} kg</td><td class="num">${fmtWithFx(c.amt,'NGN')}</td>
     <td class="num">${avg===null?'—':avg+(lang==='zh'?' 天/次':'d')}</td>
-    <td>${c.last}</td><td><span class="link" onclick="openCustomer('${c.id}')">${t('c_view')||'查看 →'}</span>${can('customer.delete')?` · <span class="link" style="color:var(--danger)" onclick="deleteCust('${c.id}')">${t('c_del')}</span>`:''}</td></tr>`;}).join('');
+    <td>${esc(c.last)}</td><td><span class="link" ${act('openCustomer',c.id)}>${t('c_view')||'查看 →'}</span>${can('customer.delete')?` · <span class="link" style="color:var(--danger)" ${act('deleteCust',c.id)}>${t('c_del')}</span>`:''}</td></tr>`;}).join('');
   document.getElementById('cust-count').textContent=list.length+' '+(lang==='zh'?'家供货商':'suppliers');
 }
 function filterCustomers(){renderCustomers();}
@@ -2036,7 +2122,7 @@ function openCustomer(id){
     <div class="k">${t('c_th_phone')}</div><div>${esc(c.phone)||'—'}</div>
     <div class="k">${t('c_th_bank')}</div><div>${esc(c.bank)||'—'}</div>
     <div class="k">${t('c_th_acct')}</div><div>${esc(c.acct)||'—'}</div>
-    <div class="k">${t('c_factory')}</div><div>${FACTORIES[c.factory]?FACTORIES[c.factory].name:c.factory}${(c.imprints&&c.imprints.length)?` <span class="tag t-dup" title="${t('c_imprint_tip')}">⚠ ${t('c_imprint')} · ${c.imprints.map(f=>FACTORIES[f]?FACTORIES[f].short:f).join('/')}</span>`:''}</div>
+    <div class="k">${t('c_factory')}</div><div>${FACTORIES[c.factory]?FACTORIES[c.factory].name:esc(c.factory)}${(c.imprints&&c.imprints.length)?` <span class="tag t-dup" title="${t('c_imprint_tip')}">⚠ ${t('c_imprint')} · ${c.imprints.map(f=>FACTORIES[f]?FACTORIES[f].short:f).join('/')}</span>`:''}</div>
     <div class="k">${t('c_th_addr')}</div><div>${esc(c.addr)||'—'}</div>
     <div class="k">${t('c_th_status')}</div><div><span class="tag ${STATUS[st].cls}">${STATUS[st][lang]}</span></div>
     <div class="k">${t('cd_note')}</div><div>${esc(c.note)||'—'}</div>
@@ -2044,7 +2130,7 @@ function openCustomer(id){
     <div class="k">${t('c_th_amt')}</div><div>${fmtWithFx(c.amt,'NGN')}</div>
     <div class="k">${t('set_role_col')==='角色'?'频次':'Frequency'}</div><div>${c.freq} ${lang==='zh'?'次':'deliveries'}</div>
     <div class="k">${t('cd_avg')}</div><div>${avg===null?'—':avg+(lang==='zh'?' 天/次':' days/delivery')}</div>
-    <div class="k">${t('c_th_last')}</div><div>${c.last}</div>`;
+    <div class="k">${t('c_th_last')}</div><div>${esc(c.last)}</div>`;
   const months=I18N[lang].repLabels.month;const base=c.kg/6;
   const qty=months.map(()=>Math.round(base*(0.6+Math.random()*0.8)));const amt=qty.map(v=>Math.round(v*210/1000));
   svgLine(document.getElementById('cd-trend'),qty,amt,months);
@@ -2052,7 +2138,7 @@ function openCustomer(id){
   const hist=visibleRecords().filter(r=>r.ty==='Receive'&&r.custId===c.id&&(r.ts||0)>=halfYearAgo).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,12);
   document.getElementById('cd-hist').innerHTML = hist.length? hist.map(r=>{
     const it=r.items[0]||{};
-    return `<tr><td>${r.dt}</td><td>${it.m||'—'}</td><td>${it.f||'—'}</td><td>${it.c||'—'}</td>
+    return `<tr><td>${esc(r.dt)}</td><td>${esc(it.m)||'—'}</td><td>${esc(it.f)||'—'}</td><td>${esc(it.c)||'—'}</td>
       <td class="num">${r.tw.toLocaleString()}</td><td class="num">${it.p||0}</td><td class="num">${fmtWithFx(r.ta, r.currency||'NGN')}</td></tr>`;
   }).join('') : `<tr><td colspan="7" class="muted">${lang==='zh'?'暂无供货明细':'No supply history'}</td></tr>`;
   go('custdetail');
@@ -2132,7 +2218,11 @@ function fmtMoney(n){return (Math.round((+n||0)*100)/100).toLocaleString();}
 function curSymbol(c){return c==='NGN'?'₦':'¥';}
 function fxRate(){return (settings&&settings.rate>0)?settings.rate:230;} /* 1 CNY = ? NGN */
 function toCNY(amount,currency){amount=+amount||0;return currency==='NGN'?amount/fxRate():amount;}
-function toNGN(cny){cny=+cny||0;return cny*fxRate();}
+/* 统一为两参签名 toNGN(amount, currency)，与 toCNY(amount, currency) 对称。
+   旧版只接受「已折成 CNY 的金额」且只有一个参数，调用方一旦漏写内层的 toCNY，
+   就会把奈拉当人民币再乘一次汇率——历史上这个坑造成过首页金额虚高。
+   不传 currency 时行为与旧版一致（当作 CNY 折算），现有调用点全部兼容。 */
+function toNGN(amount,currency){amount=+amount||0;return currency==='NGN'?amount:amount*fxRate();}
 function fmtCur(amount,currency){return curSymbol(currency)+(Math.round((+amount||0)*100)/100).toLocaleString();}
 /* 主币金额 +（老板且已设汇率时）自动换算的另一货币 */
 function fmtWithFx(amount,currency){
@@ -2275,7 +2365,7 @@ function finTablePanel(titleKey,type,list){
     <td class="num muted small">${'₦ '+fmtMoney(toNGN(toCNY(f.amount,f.currency||'NGN')))}</td>
     <td class="muted small">${esc(f.note||'')}${f.auto?` <span class="tag t-auto">${t('fin_auto')}</span>`:''}</td>
     <td>${esc(f.by||'')}</td>
-    <td>${can('finance.manage')?`<span class="link" onclick="editFin('${f.id}')">${t('cd_edit')||'编辑'}</span> · <span class="link" style="color:var(--danger)" onclick="deleteFin('${f.id}')">${t('c_del')}</span>`:''}</td>
+    <td>${can('finance.manage')?`<span class="link" ${act('editFin',f.id)}>${t('cd_edit')||'编辑'}</span> · <span class="link" style="color:var(--danger)" ${act('deleteFin',f.id)}>${t('c_del')}</span>`:''}</td>
   </tr>`).join('');
   return `<div class="panel"><div class="panel-head"><h3>${t(titleKey)}</h3><div class="muted small">${list.length} ${lang==='zh'?'笔':'entries'}</div></div><div class="panel-body" style="padding:0"><div class="tbl-scroll"><table>
     <thead><tr><th data-i18n="h_date">日期</th><th data-i18n="fin_cat">类别</th><th data-i18n="fin_amount">金额</th><th data-i18n="fin_equiv">折合</th><th data-i18n="fin_note">备注</th><th data-i18n="fin_by">经手</th><th></th></tr></thead>
@@ -2289,7 +2379,7 @@ function renderFinance(){
     if(currentRole==='boss'&&currentFactory===ALL_VIEW){
       sb.style.display='';
       const opts=[['Sagamu','总厂'],['OPIC','OPIC'],['Ikeja','IKEJA'],['ALL','全部汇总']];
-      sb.innerHTML=opts.map(([v,l])=>`<button data-fs="${v}" class="${finScope===v?'active':''}" onclick="setFinScope('${v}')">${l}</button>`).join('');
+      sb.innerHTML=opts.map(([v,l])=>`<button data-fs="${v}" class="${finScope===v?'active':''}" ${act('setFinScope',v)}>${l}</button>`).join('');
     } else sb.style.display='none';
   }
   const fs=(scope===ALL_VIEW)?finances.slice():finances.filter(f=>f.factory===scope);
@@ -2476,12 +2566,12 @@ function renderReceiveList(){
     const totW=rows.reduce((s,r)=>s+r.tw,0);
     const totA=rows.reduce((s,r)=>s+toNGN(toCNY(r.ta,r.currency||'NGN')),0);
     if(!open){
-      html+=`<tr class="grp-row" onclick="toggleRecDate('${dt}')"><td colspan="7"><span class="grp-ico">▸</span> <b>${dt}</b> · ${rows.length}${lang==='zh'?' 单':' recs'} · ${totW.toLocaleString()} kg · ${fmtWithFx(totA,'NGN')} <span class="muted">${lang==='zh'?'点击展开':'tap to expand'}</span></td></tr>`;
+      html+=`<tr class="grp-row" ${act('toggleRecDate',dt)}><td colspan="7"><span class="grp-ico">▸</span> <b>${dt}</b> · ${rows.length}${lang==='zh'?' 单':' recs'} · ${totW.toLocaleString()} kg · ${fmtWithFx(totA,'NGN')} <span class="muted">${lang==='zh'?'点击展开':'tap to expand'}</span></td></tr>`;
     }else{
-      if(!isToday) html+=`<tr class="grp-row grp-open" onclick="toggleRecDate('${dt}')"><td colspan="7"><span class="grp-ico">▾</span> <b>${dt}</b> · ${rows.length}${lang==='zh'?' 单':' recs'} · ${totW.toLocaleString()} kg · ${fmtWithFx(totA,'NGN')} <span class="muted">${lang==='zh'?'点击收起':'tap to collapse'}</span></td></tr>`;
+      if(!isToday) html+=`<tr class="grp-row grp-open" ${act('toggleRecDate',dt)}><td colspan="7"><span class="grp-ico">▾</span> <b>${dt}</b> · ${rows.length}${lang==='zh'?' 单':' recs'} · ${totW.toLocaleString()} kg · ${fmtWithFx(totA,'NGN')} <span class="muted">${lang==='zh'?'点击收起':'tap to collapse'}</span></td></tr>`;
       rows.forEach(r=>{
         const mat=(r.items||[]).map(it=>`${esc(it.m)} ${esc(it.f)} ${esc(it.c)} ${(+it.w).toLocaleString()}kg`).join('<br/>');
-        html+=`<tr><td>${esc(r.dt)}</td><td>${esc(r.ticket||'—')}</td><td><b>${esc(r.custName)}</b></td><td class="muted">${mat}</td><td class="num">${r.tw.toLocaleString()}</td><td class="num">${fmtWithFx(r.ta, r.currency||'NGN')}</td><td><span class="link" onclick="event.stopPropagation();editReceive('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="event.stopPropagation();deleteReceive('${r.id}')">${t('delete')}</span></td></tr>`;
+        html+=`<tr><td>${esc(r.dt)}</td><td>${esc(r.ticket||'—')}</td><td><b>${esc(r.custName)}</b></td><td class="muted">${mat}</td><td class="num">${r.tw.toLocaleString()}</td><td class="num">${fmtWithFx(r.ta, r.currency||'NGN')}</td><td><span class="link" data-stop="1" data-act="editReceive" data-args="${esc(JSON.stringify([r.id]))}">${t('edit')}</span> · <span class="link" style="color:var(--danger)" data-stop="1" data-act="deleteReceive" data-args="${esc(JSON.stringify([r.id]))}">${t('delete')}</span></td></tr>`;
       });
     }
   });
@@ -2609,7 +2699,7 @@ function renderPricing(){
     const p=rcPrice(m,f,col);
     return `<tr><td><b>${m}</b></td><td>${f}</td><td>${colorLabel(col)}</td>
       <td class="num"><input class="pp-i" type="number" value="${p}" style="width:90px"/></td>
-      <td><button class="btn ghost sm pp-apply" onclick="applyPrice('${m}','${f}','${col}',this)">${t('p_apply2')}</button></td>
+      <td><button class="btn ghost sm pp-apply" ${act('applyPrice',m,f,col)}>${t('p_apply2')}</button></td>
       <td><span class="tag g">${t('p_status')}</span></td></tr>`;
   }).join('');
 }
@@ -2706,7 +2796,7 @@ function renderShipList(){
   const fac=effectiveFactory();
   const list=records.filter(r=>r.ty==='Ship'&&(currentRole==='boss'&&currentFactory===ALL_VIEW||r.factory===fac||(currentRole==='boss'&&currentFactory==='Sagamu')));
   if(!list.length){el.innerHTML=`<tr><td colspan="7" class="muted">${lang==='zh'?'暂无发货记录':'No shipments'}</td></tr>`;return;}
-  el.innerHTML=list.map(r=>`<tr><td>${r.dt}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:r.factory}</td><td>${r.batch}</td><td>${esc(r.dest||'—')}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" onclick="editShip('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="deleteShip('${r.id}')">${t('delete')}</span></td></tr>`).join('');
+  el.innerHTML=list.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory)}</td><td>${esc(r.batch)}</td><td>${esc(r.dest||'—')}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" ${act('editShip',r.id)}>${t('edit')}</span> · <span class="link" style="color:var(--danger)" ${act('deleteShip',r.id)}>${t('delete')}</span></td></tr>`).join('');
 }
 function editShip(id){
   const r=records.find(x=>x.id===id&&x.ty==='Ship');if(!r)return;
@@ -2908,11 +2998,11 @@ function renderProduce(){
     const open=isToday||expandedProdDates[dt];
     const totBags=recs.reduce((s,r)=>s+(r.items||[]).reduce((a,it)=>a+(+it.bags||0),0),0);
     if(!open){
-      rows+=`<tr class="grp-row" onclick="toggleProdDate('${dt}')"><td colspan="9"><span class="grp-ico">▸</span> <b>${dt}</b> · ${recs.length}${lang==='zh'?' 单':' recs'} · ${totBags} ${unitBag()} <span class="muted">${lang==='zh'?'点击展开':'tap to expand'}</span></td></tr>`;
+      rows+=`<tr class="grp-row" ${act('toggleProdDate',dt)}><td colspan="9"><span class="grp-ico">▸</span> <b>${dt}</b> · ${recs.length}${lang==='zh'?' 单':' recs'} · ${totBags} ${unitBag()} <span class="muted">${lang==='zh'?'点击展开':'tap to expand'}</span></td></tr>`;
     }else{
-      if(!isToday) rows+=`<tr class="grp-row grp-open" onclick="toggleProdDate('${dt}')"><td colspan="9"><span class="grp-ico">▾</span> <b>${dt}</b> · ${recs.length}${lang==='zh'?' 单':' recs'} · ${totBags} ${unitBag()} <span class="muted">${lang==='zh'?'点击收起':'tap to collapse'}</span></td></tr>`;
+      if(!isToday) rows+=`<tr class="grp-row grp-open" ${act('toggleProdDate',dt)}><td colspan="9"><span class="grp-ico">▾</span> <b>${dt}</b> · ${recs.length}${lang==='zh'?' 单':' recs'} · ${totBags} ${unitBag()} <span class="muted">${lang==='zh'?'点击收起':'tap to collapse'}</span></td></tr>`;
       recs.forEach(r=>(r.items||[]).forEach(it=>{
-        rows+=`<tr><td style="cursor:pointer" class="link" onclick="event.stopPropagation();viewProduceDetail('${r.id}')">${r.dt}</td><td>${r.batch}</td><td>${r.shift||''}</td><td>${esc(machineName(it.machine))}</td><td><b>${it.m}</b></td><td>${esc(colorLabel(it.c))}</td><td class="num">${it.bags+" "+unitBag()}</td><td>${esc(r.op)}</td><td><span class="link" onclick="event.stopPropagation();editProduce('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="event.stopPropagation();deleteProduce('${r.id}')">${t('delete')}</span></td></tr>`;
+        rows+=`<tr><td style="cursor:pointer" class="link" data-stop="1" data-act="viewProduceDetail" data-args="${esc(JSON.stringify([r.id]))}">${r.dt}</td><td>${r.batch}</td><td>${r.shift||''}</td><td>${esc(machineName(it.machine))}</td><td><b>${it.m}</b></td><td>${esc(colorLabel(it.c))}</td><td class="num">${it.bags+" "+unitBag()}</td><td>${esc(r.op)}</td><td><span class="link" data-stop="1" data-act="editProduce" data-args="${esc(JSON.stringify([r.id]))}">${t('edit')}</span> · <span class="link" style="color:var(--danger)" data-stop="1" data-act="deleteProduce" data-args="${esc(JSON.stringify([r.id]))}">${t('delete')}</span></td></tr>`;
       }));
     }
   });
@@ -3033,7 +3123,7 @@ function renderSell(){
   const rev=list.reduce((s,r)=>s+toNGN(toCNY(r.ta,r.currency||'NGN')),0);
   setHTML('sl-rev', (lang==='zh'?'累计销售 ':'Revenue ')+fmtWithFx(rev,'NGN'));
   let rows='';
-  list.forEach(r=>(r.items||[]).forEach(it=>{rows+=`<tr><td>${r.dt}</td><td>${r.batch}</td><td><b>${esc(r.custName)}</b></td><td>${it.m}</td><td>${esc(colorLabel(it.c))}</td><td class="num">${it.bags+' '+unitBag()}</td><td class="num">${fmtCur(it.p,r.currency||'NGN')}</td><td class="num">${fmtCur(Math.round(it.w*it.p),r.currency||'NGN')}</td><td><span class="link" onclick="editSell('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="deleteSell('${r.id}')">${t('delete')}</span></td></tr>`;}));
+  list.forEach(r=>(r.items||[]).forEach(it=>{rows+=`<tr><td>${r.dt}</td><td>${r.batch}</td><td><b>${esc(r.custName)}</b></td><td>${esc(it.m)}</td><td>${esc(colorLabel(it.c))}</td><td class="num">${it.bags+' '+unitBag()}</td><td class="num">${fmtCur(it.p,r.currency||'NGN')}</td><td class="num">${fmtCur(Math.round(it.w*it.p),r.currency||'NGN')}</td><td><span class="link" ${act('editSell',r.id)}>${t('edit')}</span> · <span class="link" style="color:var(--danger)" ${act('deleteSell',r.id)}>${t('delete')}</span></td></tr>`;}));
   setHTML('sl-list', rows||`<tr><td colspan="9" class="muted">${lang==='zh'?'暂无记录':'No records'}</td></tr>`);
 }
 
@@ -3103,11 +3193,11 @@ function renderCatalog(){
   const el=document.getElementById('inv-catalog');if(!el)return;
   el.innerHTML=productMaterials().map(m=>{
     const colors=productColors(m);
-    const chips=colors.length?colors.map(c=>`<span class="chip">${esc(colorLabel(c))}<button class="chip-x" title="删除" onclick="removeColor('${esc(m)}','${esc(c)}')">✕</button></span>`).join('')
+    const chips=colors.length?colors.map(c=>`<span class="chip">${esc(colorLabel(c))}<button class="chip-x" title="删除" ${act('removeColor',m,c)}>✕</button></span>`).join('')
       :`<span class="muted">${lang==='zh'?'（暂无颜色，可添加）':'（no colors）'}</span>`;
     return `<div class="cat-row"><div class="cat-mat"><b>${esc(m)}</b>
-      <button class="btn ghost sm" onclick="removeMaterial('${esc(m)}')" data-i18n-title="inv_del_mat">${t('inv_del')}</button>
-      <button class="btn ghost sm" onclick="addColorPrompt('${esc(m)}')">＋ ${t('inv_add_color')}</button></div>
+      <button class="btn ghost sm" ${act('removeMaterial',m)} data-i18n-title="inv_del_mat">${t('inv_del')}</button>
+      <button class="btn ghost sm" ${act('addColorPrompt',m)}>＋ ${t('inv_add_color')}</button></div>
       <div class="chips">${chips}</div></div>`;
   }).join('');
 }
@@ -3179,8 +3269,8 @@ function renderLogistics(){
   const all=logisticsAllScope();
   const ships=records.filter(r=>r.ty==='Ship'&&(all||r.factory===currentFactory));
   const inbs=records.filter(r=>r.ty==='Inbound'&&(all||r.fromFac===currentFactory));
-  setHTML('lg-out', ships.length?ships.map(r=>`<tr><td>${r.dt}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:r.factory}</td><td>${r.batch}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" onclick="editShip('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="deleteShip('${r.id}')">${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无配送记录':'No shipments'}</td></tr>`);
-  setHTML('lg-in', inbs.length?inbs.map(r=>`<tr><td>${r.dt}</td><td>${FACTORIES[r.fromFac]?FACTORIES[r.fromFac].name:r.fromFac}</td><td>${r.batch}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'待入库')}</td><td>${r.status==='待入库'?'<button class="btn ghost sm" onclick="confirmInbound(\'${r.id}\')">'+t('logistics_confirm')+'</button> ':''}<span class="link" onclick="editInbound('${r.id}')">${t('edit')}</span> · <span class="link" style="color:var(--danger)" onclick="deleteInbound('${r.id}')">${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无入库记录':'No inbound'}</td></tr>`);
+  setHTML('lg-out', ships.length?ships.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory)}</td><td>${esc(r.batch)}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" ${act('editShip',r.id)}>${t('edit')}</span> · <span class="link" style="color:var(--danger)" ${act('deleteShip',r.id)}>${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无配送记录':'No shipments'}</td></tr>`);
+  setHTML('lg-in', inbs.length?inbs.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.fromFac]?FACTORIES[r.fromFac].name:esc(r.fromFac)}</td><td>${esc(r.batch)}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'待入库')}</td><td>${r.status==='待入库'?'<button class="btn ghost sm" '+act('confirmInbound',r.id)+'>'+t('logistics_confirm')+'</button> ':''}<span class="link" ${act('editInbound',r.id)}>${t('edit')}</span> · <span class="link" style="color:var(--danger)" ${act('deleteInbound',r.id)}>${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无入库记录':'No inbound'}</td></tr>`);
   const pend=inbs.filter(r=>r.status==='待入库').reduce((s,r)=>s+r.tw,0);
   const transit=ships.filter(r=>r.status==='在途').reduce((s,r)=>s+r.tw,0);
   setHTML('lg-summary', (lang==='zh'?'在途 ':'In transit ')+transit.toLocaleString()+' kg · '+(lang==='zh'?'待入库 ':'Pending ')+pend.toLocaleString()+' kg');
@@ -3243,7 +3333,7 @@ function runSearch(){
       const c=customers.find(x=>x.id===r.custId)||{};
       const it=r.items&&r.items[0]||{};
       const cid=r.custId?`${r.custId}`:'';
-      const viewLink = cid? `<span class="link" onclick="openCustomer('${cid}')">${lang==='zh'?'查看近半年供货':'6-mo supply'}</span>` : '—';
+      const viewLink = cid? `<span class="link" ${act('openCustomer',cid)}>${lang==='zh'?'查看近半年供货':'6-mo supply'}</span>` : '—';
       return `<tr><td>${r.dt}</td><td><span class="tag ${typeClass(r.ty)}">${t('ty_'+r.ty)||r.ty}</span></td><td><b>${esc(r.custName||c.name||'')}</b></td><td>${esc(c.phone||'')}</td><td>${esc(c.bank||'')}</td><td>${esc(c.acct||'')}</td><td>${esc(c.addr||'')}</td><td class="muted">${esc(r.note||'')}</td><td>${esc(it.m||'')}</td><td class="num">${Math.round(r.tw||0).toLocaleString()}</td><td class="num">¥ ${Math.round(r.ta||0).toLocaleString()}</td><td>${viewLink}</td></tr>`;
     }).join('');
     setHTML('s-body', rows||`<tr><td colspan="11" class="muted">${lang==='zh'?'无匹配记录':'No records'}</td></tr>`);
@@ -3266,7 +3356,7 @@ function runChurn(){
     const rows=visibleCustomers().filter(c=>{
       if(mat!=='全部'&&!records.some(r=>r.ty==='Receive'&&r.custId===c.id&&(r.items||[]).some(it=>it.m===mat)&&r.tw>=single))return false;
       return (c.kg>=single)||(c.kg>=month);
-    }).sort((a,b)=>b.kg-a.kg).slice(0,100).map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone||'')}</td><td class="num">${c.kg.toLocaleString()}</td><td class="num">¥ ${(c.amt/1e6).toFixed(2)}M</td><td><span class="link" onclick="contactCust('${c.id}')">${t('contact')||'联系'}</span></td></tr>`).join('');
+    }).sort((a,b)=>b.kg-a.kg).slice(0,100).map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone||'')}</td><td class="num">${c.kg.toLocaleString()}</td><td class="num">¥ ${(c.amt/1e6).toFixed(2)}M</td><td><span class="link" ${act('contactCust',c.id)}>${t('contact')||'联系'}</span></td></tr>`).join('');
     setHTML('churn-body', rows||`<tr><td colspan="5" class="muted">—</td></tr>`);
   }catch(e){}
 }
@@ -3573,13 +3663,43 @@ function doSync(){
   saveState();updateSyncUI();
   toast(lang==='zh'?'同步完成 · 待上传已清空':'Synced · pending cleared');
 }
-function backupLocal(){settings.lastBackup=nowStr();saveState();const blob=new Blob([JSON.stringify(Store.get(STATE_KEY,{}))],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rf_backup_'+nowStr().replace(/[: ]/g,'-')+'.json';a.click();toast(lang==='zh'?'本地备份已创建':'Local backup created');}
-function backupCloud(){settings.lastBackup=nowStr();saveState();toast(lang==='zh'?'云端备份完成':'Cloud backup done');}
+function backupLocal(){
+  settings.lastBackup=nowStr();flushSaveState();
+  const blob=new Blob([JSON.stringify(Store.get(STATE_KEY,{}))],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='rf_backup_'+nowStr().replace(/[: ]/g,'-')+'.json';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1000); /* 不 revoke 会一直占着内存 */
+  toast(lang==='zh'?'本地备份已创建':'Local backup created');
+}
+/* 真实上传到服务端。此前这里只弹一句「云端备份完成」却什么都没传，
+   属于最危险的一类 bug——它让用户以为有异地备份，实际上数据只在这台设备上。 */
+function backupCloud(){
+  if(typeof apiReq!=='function'){ toast(lang==='zh'?'当前环境不支持云端备份':'Cloud backup unavailable'); return; }
+  if(!authToken){ toast(lang==='zh'?'请先登录后再做云端备份':'Sign in to use cloud backup'); return; }
+  toast(lang==='zh'?'正在上传备份…':'Uploading backup…');
+  flushSaveState();
+  var snapshot=Store.get(STATE_KEY,{});
+  apiReq('/api/backup',{method:'POST',body:JSON.stringify(snapshot)}).then(function(r){
+    var body=(r&&r.body)||{};
+    if(r&&r.ok&&body.ok){
+      settings.lastBackup=nowStr();
+      saveState();
+      var kb=Math.round((body.size||0)/1024);
+      toast((lang==='zh'?'云端备份完成（':'Cloud backup done (')+kb+(lang==='zh'?' KB）':' KB)'));
+      var el=document.getElementById('bk-last'); if(el)el.textContent=settings.lastBackup;
+    }else{
+      toast((lang==='zh'?'云端备份失败：':'Cloud backup failed: ')+(body.error||(lang==='zh'?'未知错误':'unknown')));
+    }
+  }).catch(function(e){
+    toast((lang==='zh'?'云端备份失败：':'Cloud backup failed: ')+((e&&e.message)||e));
+  });
+}
 function restoreBackup(input){const f=input.files&&input.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s&&s.records){if(!confirm(lang==='zh'?'恢复备份将覆盖当前数据，确定？':'Overwrite current data?'))return;if(Array.isArray(s.customers))customers=s.customers;if(Array.isArray(s.records))records=s.records.map(r=>{if(!r.items)r.items=[];if(!r.factory)r.factory='Sagamu';recTotals(r);return r;});if(s.priceMap)priceMap=s.priceMap;if(s.products)products=s.products;if(s.priceHist)priceHist=s.priceHist;
 if(s.invRawEdit)invRawEdit=s.invRawEdit;
 if(s.invPelletEdit)invPelletEdit=s.invPelletEdit;if(s.auditLog)auditLog=s.auditLog;if(s.settings)settings=Object.assign(settings,s.settings);if(Array.isArray(s.users)&&s.users.length)users=s.users;saveState();renderAll();toast(lang==='zh'?'已恢复备份':'Backup restored');}}catch(e){toast(lang==='zh'?'恢复失败':'Restore failed');}};rd.readAsText(f);}
 function saveLocal(){const el=document.getElementById('lo-lang');if(el)settings.lang=el.value;saveState();setLang(settings.lang||'zh');toast(lang==='zh'?'设置已保存':'Settings saved');}
-function renderAudit(){const el=document.getElementById('audit-body');if(!el)return;const rows=(auditLog||[]).slice(0,300).map((r,i)=>`<tr><td class="muted">${esc(r.time||'')}</td><td>${esc(r.actor||'')}</td><td>${esc(t(r.action)||r.action||'')}</td><td>${esc(r.target||'')}</td><td class="muted">${esc(r.detail||'')}</td><td><span class="link" style="color:var(--danger)" onclick="deleteAuditItem(${i})">${t('delete')}</span></td></tr>`).join('');el.innerHTML=rows||`<tr><td colspan="6" class="muted">—</td></tr>`;}
+function renderAudit(){const el=document.getElementById('audit-body');if(!el)return;const rows=(auditLog||[]).slice(0,300).map((r,i)=>`<tr><td class="muted">${esc(r.time||'')}</td><td>${esc(r.actor||'')}</td><td>${esc(t(r.action)||r.action||'')}</td><td>${esc(r.target||'')}</td><td class="muted">${esc(r.detail||'')}</td><td><span class="link" style="color:var(--danger)" ${act('deleteAuditItem',i)}>${t('delete')}</span></td></tr>`).join('');el.innerHTML=rows||`<tr><td colspan="6" class="muted">—</td></tr>`;}
 /* 单条删除审计记录（操作本身记入审计，形成闭环可追溯） */
 function deleteAuditItem(idx){
   if(typeof idx!=='number'||!auditLog[idx])return;
@@ -3681,15 +3801,15 @@ function togglePwd(){
   btn.setAttribute('aria-label', show?'隐藏密码':'显示密码');
   el.focus();
 }
-/* 记住账号密码：勾选后保存明文账号+密码到本地，下次自动填充；取消勾选则清除 */
+/* 记住账号：只保存账号（不含密码），下次自动填充用户名；取消勾选则清除 */
 const REMEMBER_KEY='rf_remember_v1';
 function saveRemembered(){
   try{
     const u=document.getElementById('li-user').value.trim();
-    const p=document.getElementById('li-pass').value;
     const rem=document.getElementById('li-remember') && document.getElementById('li-remember').checked;
-    /* 注意：明文保存密码存在安全风险，仅按需求实现；建议改用加密/系统凭据存储 */
-    if(rem && u){ localStorage.setItem(REMEMBER_KEY, JSON.stringify({username:u, password:p})); }
+    /* 只记住账号，永不落盘密码：明文口令存在 localStorage 意味着共用电脑或任意 XSS 都能直接拿走老板密码，
+       而「记住密码」省下的只是几秒钟输入，风险与收益完全不对等。 */
+    if(rem && u){ localStorage.setItem(REMEMBER_KEY, JSON.stringify({username:u})); }
     else { localStorage.removeItem(REMEMBER_KEY); }
   }catch(e){}
 }
@@ -3699,8 +3819,9 @@ function loadRemembered(){
   const u=document.getElementById('li-user'), p=document.getElementById('li-pass'), rem=document.getElementById('li-remember');
   if(r && r.username!=null){
     if(u)u.value=r.username;
-    if(p)p.value=r.password||'';
     if(rem)rem.checked=true;
+    /* 历史版本曾把明文口令写进 rf_remember_v1，读到旧格式就地清除，不留残余 */
+    if(r.password!==undefined){ try{ localStorage.removeItem(REMEMBER_KEY); }catch(e){} }
   }
 }
 /* ============ 账号服务端权威：Token 与离线 verifier 缓存 ============ */
@@ -3813,6 +3934,24 @@ function go(view){
   else if(view==='finance')renderFinance();
   else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
 }
+/* 单视图渲染：go() 与 refreshAfterSave() 共用同一份映射，避免两处 switch 各自走样 */
+function renderView(view){
+  if(!view)return;
+  if(view==='produce')renderProduce();
+  else if(view==='sell')renderSell();
+  else if(view==='receiving')renderReceiveList();
+  else if(view==='logistics')renderLogistics();
+  else if(view==='inventory')renderInventory();
+  else if(view==='shipping'){renderShipRows();renderShipList();}
+  else if(view==='reports')setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));
+  else if(view==='settings'){ try{renderAccounts();}catch(e){ if(window.console)console.error('renderAccounts',e); } renderSettingsTabs(); }
+  else if(view==='search'){initSearchDates();runSearch();}
+  else if(view==='finance')renderFinance();
+  else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
+  else if(view==='customers')renderCustomers();
+  else if(view==='pricing')renderPricing();
+  else if(view==='custdetail'){ if(typeof currentCustId!=='undefined'&&currentCustId)openCustomer(currentCustId); }
+}
 function toggleSidebar(){const sb=document.getElementById('sidebar')||document.querySelector('.sidebar');const sc=document.getElementById('scrim');const hb=document.getElementById('hamburger');if(!sb)return;const open=sb.classList.toggle('open');if(sc)sc.classList.toggle('show',open);if(hb)hb.setAttribute('aria-expanded',open?'true':'false');}
 function closeSidebar(){const sb=document.getElementById('sidebar')||document.querySelector('.sidebar');const sc=document.getElementById('scrim');const hb=document.getElementById('hamburger');if(sb)sb.classList.remove('open');if(sc)sc.classList.remove('show');if(hb)hb.setAttribute('aria-expanded','false');}
 /* 进入检索视图时初始化日期范围：默认近半年（今天往前 6 个月 ~ 今天）；
@@ -3824,11 +3963,48 @@ function initSearchDates(){
   }catch(e){}
 }
 function renderAll(){renderCustomers();renderPricing();runSearch();runChurn();renderToday();renderShipRows();renderProduce();renderSell();renderReceiveList();renderLogistics();renderInventory();renderFinance();recomputeDashboard();drawDashboardCharts();renderAudit();updateSyncUI();renderLan();setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));}
+/* 按需刷新：原来一次保存要重绘 11 个视图（全部 DOM 重建），录入高峰期明显卡顿。
+   现在只重算顶栏统计 + 重绘「当前所在视图」+ 审计日志（条数少且属合规留痕，必须及时）。
+   其余视图在切过去时由 go() 自然重绘，功能不丢。 */
+/* 宽表格在手机上会直接溢出屏幕且无法横向滑动（原样式表没有任何 overflow-x 容器）。
+   这里在运行时给表格补一层滚动壳：用 MutationObserver 统一处理，
+   覆盖所有动态渲染的表格，不必逐个改渲染函数。 */
+let tblScrollTimer=null;
+function scheduleTableScroll(){
+  if(tblScrollTimer)return;
+  tblScrollTimer=setTimeout(function(){ tblScrollTimer=null; ensureTableScroll(); },120);
+}
+function ensureTableScroll(){
+  var host=document.querySelector('.content');
+  if(!host)return;
+  var tables=host.querySelectorAll('table');
+  for(var i=0;i<tables.length;i++){
+    var t=tables[i], p=t.parentNode;
+    if(p && p.classList && p.classList.contains('tbl-autox'))continue;
+    if(!p)continue;
+    var w=document.createElement('div');
+    w.className='tbl-autox';
+    p.insertBefore(w,t);
+    w.appendChild(t);
+  }
+}
+function installTableScrollObserver(){
+  if(typeof MutationObserver==='undefined'||typeof document==='undefined')return;
+  var host=document.querySelector('.content');
+  if(!host){ setTimeout(installTableScrollObserver,300); return; }
+  ensureTableScroll();
+  try{
+    var mo=new MutationObserver(scheduleTableScroll);
+    mo.observe(host,{childList:true,subtree:true});
+  }catch(e){}
+}
+installTableScrollObserver();
 function refreshAfterSave(){
-  recomputeDashboard();drawDashboardCharts();
-  renderCustomers();runSearch();runChurn();renderToday();
-  renderInventory();renderProduce();renderSell();renderReceiveList();renderLogistics();renderShipList();renderFinance();
-  renderAudit();updateSyncUI();renderLan();
+  recomputeDashboard();drawDashboardCharts();updateSyncUI();renderAudit();
+  try{
+    var av=document.querySelector('.view.active');
+    renderView(av?(av.id||'').replace(/^view-/,'') : '');
+  }catch(e){ if(window.console)console.error('refreshAfterSave',e); }
 }
 function refreshControls(){
   const show=(id,ok)=>{const e=document.getElementById(id);if(e)e.style.display=ok?'':'none';};
@@ -3888,8 +4064,8 @@ function renderAccounts(){
   const el=document.getElementById('accounts-body');if(!el)return;
   const canEdit=can('account.manage');
   const rows=users.map(u=>{
-    const grant = canEdit&&u.username!==(currentUser&&currentUser.username) ? `<span class="link" onclick="loadAcct('${esc(u.username)}')">${t('acct_grant')}</span>` : '—';
-    const del = (canEdit&&u.role!=='boss'&&u.role!=='devAdmin') ? `<span class="link" style="color:var(--danger)" onclick="deleteAccount('${esc(u.username)}')">${t('acct_delete')}</span>` : '—';
+    const grant = canEdit&&u.username!==(currentUser&&currentUser.username) ? `<span class="link" ${act('loadAcct',u.username)}>${t('acct_grant')}</span>` : '—';
+    const del = (canEdit&&u.role!=='boss'&&u.role!=='devAdmin') ? `<span class="link" style="color:var(--danger)" ${act('deleteAccount',u.username)}>${t('acct_delete')}</span>` : '—';
     return `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.name||'')}</td><td>${roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role}</td><td>${u.factories.map(f=>FACTORIES[f]?FACTORIES[f].name:f).join('、')}</td><td>${grant} &nbsp; ${del}</td></tr>`;
   }).join('');
   el.innerHTML=rows||`<tr><td colspan="5" class="muted">—</td></tr>`;
@@ -4017,7 +4193,7 @@ function renderAnnouncements(){
     if(!list.length){ bar.style.display='none'; bar.innerHTML=''; }
     else {
       bar.style.display='flex';
-      const seg=n=>`<span class="ann-item"><span class="ann-t">${esc(n.title||'')}</span><span class="ann-b">${esc(n.body||'')}</span>${can('announce')?`<span class="ann-del" onclick="deleteAnnounce('${n.id}')">${t('ann_del')}</span>`:''}</span>`;
+      const seg=n=>`<span class="ann-item"><span class="ann-t">${esc(n.title||'')}</span><span class="ann-b">${esc(n.body||'')}</span>${can('announce')?`<span class="ann-del" ${act('deleteAnnounce',n.id)}>${t('ann_del')}</span>`:''}</span>`;
       /* 内容复制两份，配合 CSS translateX(-50%) 实现无缝循环滚动轮播 */
       bar.innerHTML=`<div class="ann-flag">📢 公告</div><div class="ann-track-wrap"><div class="ann-track">${list.map(seg).join('')}${list.map(seg).join('')}</div></div>`;
     }
