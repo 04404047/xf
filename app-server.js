@@ -810,50 +810,55 @@ const server = http.createServer(async (req, res) => {
 
 /* 压缩结果缓存：key=文件路径，命中条件为 mtime 与 size 均未变（重新部署会自动失效）。
    399KB 的 index.html 每次请求都 gzip 一遍会白白烧 CPU，缓存后只有首访与更新后各压一次。 */
-const gzipCache = new Map(); // file -> {mtimeMs, size, buf}
+const gzipCache = new Map(); // file -> {key, buf}  key 为内容级 ETag（html/js/css）或 mtimeMs-size（其它）
+function writeFileBody(res, file, ext, data, headers, req, cacheKey) {
+  const compressible = ext === '.html' || ext === '.js' || ext === '.css' || ext === '.json' || ext === '.svg';
+  const acceptGzip = compressible && data.length > 1024 && /gzip/i.test(req.headers['accept-encoding'] || '');
+  if (!acceptGzip) { res.writeHead(200, headers); res.end(data); return; }
+  const cached = gzipCache.get(file);
+  if (cached && cached.key === cacheKey) {
+    headers['Content-Encoding'] = 'gzip';
+    headers['Content-Length'] = cached.buf.length;
+    res.writeHead(200, headers);
+    res.end(cached.buf);
+    return;
+  }
+  zlib.gzip(data, (gzErr, gz) => {
+    if (gzErr) { res.writeHead(200, headers); res.end(data); return; }
+    gzipCache.set(file, { key: cacheKey, buf: gz });
+    headers['Content-Encoding'] = 'gzip';
+    headers['Content-Length'] = gz.length;
+    res.writeHead(200, headers);
+    res.end(gz);
+  });
+}
+
 function serveFile(res, file, req) {
-  fs.stat(file, (err, st) => {
+  /* 先读字节再判缓存：ETag 由真实内容算出，杜绝 stat/read 两次系统调用之间的错配 */
+  fs.readFile(file, (err, data) => {
     if (err) { sendJSON(res, 404, { ok: false, error: 'file not found' }, req); return; }
     const ext = path.extname(file).toLowerCase();
     const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Vary': 'Accept-Encoding' };
     Object.assign(headers, SECURITY_HEADERS);
-    // SPA 外壳（html/js/css）禁止强缓存：每次请求都向服务器校验；
-    // 重新部署后文件 mtime 变化即返回最新内容，用户无需手动清浏览器缓存。
     if (ext === '.html' || ext === '.js' || ext === '.css') {
+      /* SPA 外壳禁止强缓存，每次都回源校验。
+         校验器用内容级强 ETag（sha1 + 字节长度）而不是 Last-Modified：
+         Last-Modified 只有秒精度，重新部署若落在同一秒会被误判为未变更而回 304，
+         用户就会看到"部署了新文件但页面还是旧的"。内容级 ETag 只要字节变了就一定不等。 */
       headers['Cache-Control'] = 'no-cache';
-      headers['Last-Modified'] = st.mtime.toUTCString();
-      const inmMs = req.headers['if-modified-since'] ? Date.parse(req.headers['if-modified-since']) : NaN;
-      // 以秒为粒度比较（Last-Modified/If-Modified-Since 仅秒精度）：未变化则回 304，已重新部署（mtime 进入新秒）则回 200 最新内容
-      if (!isNaN(inmMs) && Math.floor(inmMs / 1000) >= Math.floor(st.mtimeMs / 1000)) {
-        res.writeHead(304, headers);
-        res.end();
-        return;
-      }
-    } else {
-      // 图片等静态资源可短期缓存（内容通常不随部署变化）
-      headers['Cache-Control'] = 'public, max-age=86400';
-    }
-    fs.readFile(file, (e2, data) => {
-      if (e2) { sendJSON(res, 404, { ok: false, error: 'file not found' }, req); return; }
-      const compressible = ext === '.html' || ext === '.js' || ext === '.css' || ext === '.json' || ext === '.svg';
-      const acceptGzip = compressible && data.length > 1024 && /gzip/i.test(req.headers['accept-encoding'] || '');
-      if (!acceptGzip) { res.writeHead(200, headers); res.end(data); return; }
-      const cached = gzipCache.get(file);
-      if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
-        headers['Content-Encoding'] = 'gzip';
-        headers['Content-Length'] = cached.buf.length;
-        res.writeHead(200, headers);
-        res.end(cached.buf);
-        return;
-      }
-      zlib.gzip(data, (gzErr, gz) => {
-        if (gzErr) { res.writeHead(200, headers); res.end(data); return; }
-        gzipCache.set(file, { mtimeMs: st.mtimeMs, size: st.size, buf: gz });
-        headers['Content-Encoding'] = 'gzip';
-        headers['Content-Length'] = gz.length;
-        res.writeHead(200, headers);
-        res.end(gz);
+      const etag = '"' + crypto.createHash('sha1').update(data).digest('hex').slice(0, 27) + '-' + data.length.toString(16) + '"';
+      headers['ETag'] = etag;
+      if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); res.end(); return; }
+      fs.stat(file, (e3, st) => {
+        if (!e3) headers['Last-Modified'] = st.mtime.toUTCString();
+        writeFileBody(res, file, ext, data, headers, req, etag);
       });
+      return;
+    }
+    /* 图片等静态资源内容通常不随部署变化，可短期强缓存 */
+    headers['Cache-Control'] = 'public, max-age=86400';
+    fs.stat(file, (e3, st) => {
+      writeFileBody(res, file, ext, data, headers, req, e3 ? ('nos-' + data.length) : (st.mtimeMs + '-' + st.size));
     });
   });
 }

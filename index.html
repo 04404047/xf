@@ -885,7 +885,7 @@
               <tr data-page-node-id="DAleIJRmvmyb9fphmWl7T9"><td data-i18n="role_shipping_s" data-page-node-id="LQOKtvglQCuZqkW0DKGAF3">发货员</td><td data-page-node-id="Vc1ciSWwSovfngme1EDgvD"><span class="tag r" data-page-node-id="p0LJH7mpQTyMKxUwiam6G6">✕</span></td><td data-page-node-id="uWi0yNf4DhrRYXB0SUfTyH"><span class="tag r" data-page-node-id="iynRFoLNd6HcvxbaU9862E">✕</span></td><td data-page-node-id="E66CdL6XdvAla4V1UoDMoE"><span class="tag r" data-page-node-id="KnDJT0cs5D9vwK01jECpaR">✕</span></td><td data-page-node-id="8Fvput1Dnx0W5cmbZcJLPQ"><span class="tag g" data-page-node-id="xPvpOczHIXmPAFltUjrIhn">✓</span></td><td data-page-node-id="OOjodN3hhzRMa6q8W9L8OO"><span class="tag r" data-page-node-id="zUQr2q1lMgHjRSm9IFw0z5">✕</span></td><td data-page-node-id="cfBVON5kHzQcGDzjZzAr4G"><span class="tag r" data-page-node-id="ZXZmx2Y0lpCjSQGXevdtXz">✕</span></td></tr>
               <tr data-page-node-id="H0xMXCwg5U8r4L5iNy88zc"><td data-i18n="role_auditor_s" data-page-node-id="yhXPsDdAC1iw40co4bCxYW">审计员</td><td data-page-node-id="zYqjYaEK51qfA3IiExWVOO"><span class="tag g" data-page-node-id="reEY0WS7l3dGiVmbpWsGqp">view</span></td><td data-page-node-id="YVMn7QVltyC42G1QlGgLGD"><span class="tag r" data-page-node-id="BA6EJQL0AZMeagdDEV5qxe">✕</span></td><td data-page-node-id="JVLBDNn3bkAD29i95Sm5YX"><span class="tag r" data-page-node-id="BqNMCpeZkMRn0laL6iCycX">✕</span></td><td data-page-node-id="kYTOcJ63VVrkLrMObICW2B"><span class="tag r" data-page-node-id="zxfdiOna3A2HFFvDSDwb3z">✕</span></td><td data-page-node-id="QS2NHEB3v4yIVtfeCz3pR0"><span class="tag g" data-page-node-id="A2jdpvYicR1wfVLYhJJ6fU">✓</span></td><td data-page-node-id="qgB56n09FhHbOcbO1jvvKZ"><span class="tag g" data-page-node-id="l52UbxYcn3GFMI5nCT3kbZ">✓</span></td></tr>
             </tbody></table></div></div>
-        <div id="tab-sync" class="panel hidden" data-page-node-id="MbhqZWt9exfVTVuN9V4YWR"><div class="panel-head" data-page-node-id="DFbCds28nH0gUmnIisPmVd"><h3 data-i18n="set_sync" data-page-node-id="zVoHNYIsKpRn3Pn4FepkNb">同步与离线状态</h3><div class="right" data-page-node-id="SIPJ2XA01BKt9tEVWUGBMp"><button class="btn sm eco" onclick="doSync()" data-i18n="sync_now" data-page-node-id="WMGpDDzghA3EwDeEC1e3FV">立即同步</button></div></div>
+        <div id="tab-sync" class="panel hidden" data-page-node-id="MbhqZWt9exfVTVuN9V4YWR"><div class="panel-head" data-page-node-id="DFbCds28nH0gUmnIisPmVd"><h3 data-i18n="set_sync" data-page-node-id="zVoHNYIsKpRn3Pn4FepkNb">同步与离线状态</h3><div class="right" data-page-node-id="SIPJ2XA01BKt9tEVWUGBMp"><span class="pill" id="app-build"></span> <button class="btn sm eco" onclick="doSync()" data-i18n="sync_now" data-page-node-id="WMGpDDzghA3EwDeEC1e3FV">立即同步</button></div></div>
           <div class="panel-body" data-page-node-id="nbokrAlHWGqcxDHVuksGnR"><div class="note" id="sync-key-warn" style="display:none" data-page-node-id="GL1GObywJ676UHFV9qM1Ym">
             ⚠ <b data-i18n="sy_nokey" data-page-node-id="6HtsJ49P1aw9kLLr9TywuG">同步未加密</b>：当前同步服务器未启用 API Key，账本与账号数据以<b data-page-node-id="RjaMfaOUe7N496gV8k3lqV">明文</b>传输与存储。请勿在公网暴露该端口；生产部署请在启动服务器时设置 <code data-page-node-id="YfA9QyuNrzmEOs8qjYTHOd">SYNC_KEY</code> 环境变量，并在本页填入相同密钥。
           </div><div class="kv" data-page-node-id="GDiXUeUWxPnMBvZE8idIzi">
@@ -1105,8 +1105,8 @@ const I18N = {
     hero_title:"回收作业台", hero_sub:"本厂以废旧塑料回收为核心，记录每日回收与同步状态", hero_cta:"＋ 新建回收单",
     d_crushed:"今日破碎料总量", d_bulk:"今日大料总量", d_sum:"两者之和", d_recamt:"今日回收金额", d_shiptoday:"今日配送量", d_click:"点击查看明细 →",
     d_ov_bulk:"本月大料采购量", d_ov_crushed:"本月破碎料采购量", d_ov_total:"本月合计采购量", d_ov_buyamt:"本月采购金额", d_ov_income:"累计进账", d_ov_expense:"累计支出", d_ov_balance:"当前余额", d_ov_produced:"本月生产颗粒(kg)", d_ov_sold:"本月出售颗粒(kg)", d_ov_shipw:"本月配送总厂(kg)", dash_home:"首页总览",
-    fin_cur:"货币", fin_rate:"1 人民币 CNY = ? 奈拉 NGN", fin_fx_equiv:"等值", fin_equiv:"折合", set_rate:"汇率兑换", rate_tip:"设置当前汇率后，收支登记将按此汇率自动换算展示。仅老板账号可查看与修改。",
-    fx_denied:"汇率仅老板账号可查看与修改。", fx_scope_boss:"老板 · 可修改", fx_scope_readonly:"只读（仅老板可修改）",
+    fin_cur:"货币", fin_rate:"1 人民币 CNY = ? 奈拉 NGN", fin_fx_equiv:"等值", fin_equiv:"折合", set_rate:"汇率兑换", rate_tip:"设置当前汇率后，收支登记将按此汇率自动换算展示。仅老板 / 管理员账号可查看与修改。",
+    fx_denied:"汇率仅老板 / 管理员账号可查看与修改。", fx_scope_boss:"老板 / 管理员 · 可修改", fx_scope_readonly:"只读（仅老板 / 管理员可修改）",
     fx_current:"当前汇率", fx_set_by:"最后由", fx_set_at:"设置于", fx_history:"变更记录", fx_hist_empty:"暂无变更记录",
     fx_h_time:"时间", fx_h_rate:"汇率", fx_h_by:"操作人", fx_need_pos:"汇率需大于 0", fx_saved:"汇率已保存",
     fx_hint_lock:"新登记的记录会锁定当时的汇率，后续调整汇率不会篡改历史账目。",
@@ -1195,8 +1195,8 @@ const I18N = {
     hero_title:"Recovery Console", hero_sub:"This plant centres on plastic recovery — track daily recovery & dispatch", hero_cta:"＋ New Recovery",
     d_crushed:"Crushed today", d_bulk:"Bulk today", d_sum:"Bulk + Crushed", d_recamt:"Recovered amount today", d_shiptoday:"Dispatched today", d_click:"Click for detail →",
     d_ov_bulk:"Bulk purchased this month", d_ov_crushed:"Crushed purchased this month", d_ov_total:"Total purchased this month", d_ov_buyamt:"Purchase amount this month", d_ov_income:"Income (cum.)", d_ov_expense:"Expense (cum.)", d_ov_balance:"Balance", d_ov_produced:"Pellets produced this month (kg)", d_ov_sold:"Pellets sold this month (kg)", d_ov_shipw:"Shipped to HQ this month (kg)", dash_home:"Home Overview",
-    fin_cur:"Currency", fin_rate:"1 CNY = ? NGN", fin_fx_equiv:"Equivalent", fin_equiv:"Equiv.", set_rate:"Exchange Rate", rate_tip:"Set the current rate; entries auto-convert at this rate. Only the boss account can view and change it.",
-    fx_denied:"Exchange rate is visible and editable to the boss account only.", fx_scope_boss:"Boss · editable", fx_scope_readonly:"Read-only (boss only)",
+    fin_cur:"Currency", fin_rate:"1 CNY = ? NGN", fin_fx_equiv:"Equivalent", fin_equiv:"Equiv.", set_rate:"Exchange Rate", rate_tip:"Set the current rate; entries auto-convert at this rate. Only boss / admin accounts can view and change it.",
+    fx_denied:"Exchange rate is visible and editable to boss / admin accounts only.", fx_scope_boss:"Boss / Admin · editable", fx_scope_readonly:"Read-only (boss / admin only)",
     fx_current:"Current rate", fx_set_by:"Set by", fx_set_at:"at", fx_history:"Change history", fx_hist_empty:"No changes yet",
     fx_h_time:"Time", fx_h_rate:"Rate", fx_h_by:"By", fx_need_pos:"Rate must be > 0", fx_saved:"Rate saved",
     fx_hint_lock:"New entries lock the rate at entry time; later rate changes never rewrite history.",
@@ -1413,15 +1413,21 @@ function buildSeedUsers(){
 }
 
 /* —— RBAC 权限矩阵 —— */
+/* 顶层权限集：老板与管理员（devAdmin，登录名“管理员”）共用同一份，管理员涵盖老板的全部权限。
+   今后给老板新增权限，管理员自动跟随——两份列表各自维护必然漂移，这里只保留单一数据源。 */
+const TOP_PERMS=['view:*','customer:*','receive','ship','produce','sell','inbound','crush','pricing','settings.write','audit.view','record.delete','customer.create','customer.edit','customer.delete','account.manage','data.reset','view.allFactories','announce','finance.view','finance.manage','fx.view','fx.manage'];
 const ROLE_PERMS={
-  /* fx.view=看见汇率面板；fx.manage=修改汇率。修改权限只给老板——汇率直接决定全部账目折算，
-     不该让分厂管理员/财务角色随手改动。devAdmin 保留只读，便于排障与审计。 */
-  boss:['view:*','customer:*','receive','ship','produce','sell','inbound','crush','pricing','settings.write','audit.view','record.delete','customer.create','customer.edit','customer.delete','account.manage','data.reset','view.allFactories','announce','finance.view','finance.manage','fx.view','fx.manage'],
-  devAdmin:['view:*','customer:*','receive','ship','produce','sell','inbound','crush','pricing','settings.write','audit.view','record.delete','customer.create','customer.edit','customer.delete','account.manage','data.reset','view.allFactories','announce','finance.view','finance.manage','fx.view'],
+  boss:TOP_PERMS.slice(),
+  devAdmin:TOP_PERMS.slice(),
   factoryAdmin:['view:dashboard','view:customers','view:receiving','view:today','view:pricing','view:shipping','view:crush','view:produce','view:sell','view:logistics','view:inventory','view:search','view:reports','view:settings','view:custdetail','view:finance','customer.create','customer.edit','customer.delete','receive','ship','inbound','produce','sell','pricing','record.delete','settings.write','audit.view','finance.view','finance.manage'],
   registrar:['view:dashboard','view:customers','view:receiving','view:today','view:shipping','view:search','view:custdetail','receive','ship','record.delete'],
   auditor:['view:dashboard','view:customers','view:today','view:search','view:reports','view:settings','view:custdetail','view:finance','audit.view','finance.view']
 };
+/* 顶层角色：业务上“管理员 ≡ 老板”。此前全厂视野、库存编辑、工厂切换等能力散落在 20 多处
+   把当前角色与老板字面量直接比较的硬编码上，管理员即便有权限字符串也拿不到功能入口。
+   统一走这两个函数后，管理员与老板行为完全一致。传参可判定指定用户对象，不传则判定当前登录角色。 */
+function isTopRole(role){ const r=(role===undefined||role===null)?currentRole:role; return r==='boss'||r==='devAdmin'; }
+function isTopAllView(){ return isTopRole() && (currentFactory===ALL_VIEW||currentFactory==='ALL'); }
 function can(perm){
   if(!currentRole)return false;
   const p=ROLE_PERMS[currentRole]||[];
@@ -1430,7 +1436,7 @@ function can(perm){
 }
 function canView(v){
   if(!can('view:'+v))return false;
-  if(currentRole==='boss'&&currentFactory==='ALL')return true;
+  if(isTopAllView())return true;
   const allowed=FACTORY_VIEWS[currentFactory]||[];
   return allowed.includes(v);
 }
@@ -1442,7 +1448,7 @@ let editingProduceId=null, editingReceiveId=null, editingSellId=null, editingShi
 
 /* —— 工厂解析 / 隔离过滤 —— */
 function effectiveFactory(){
-  if(currentRole==='boss' && currentFactory===ALL_VIEW){
+  if(isTopAllView()){
     const el=document.getElementById('rc-factory')||document.getElementById('cm-factory')||document.getElementById('s-factory');
     if(el && el.value && el.value!==ALL_VIEW) return el.value;
     return 'Sagamu';
@@ -1450,11 +1456,11 @@ function effectiveFactory(){
   return currentFactory;
 }
 function visibleRecords(){
-  if(currentRole==='boss' && currentFactory===ALL_VIEW) return records;
+  if(isTopAllView()) return records;
   const f=currentFactory; return records.filter(r=>r.factory===f);
 }
 function visibleCustomers(){
-  if(currentRole==='boss' && currentFactory===ALL_VIEW) return customers;
+  if(isTopAllView()) return customers;
   const f=currentFactory; return customers.filter(c=>c.factory===f);
 }
 
@@ -1543,7 +1549,7 @@ const PLANT_TODAY=(typeof DEMO_TODAY!=='undefined'&&DEMO_TODAY)?DEMO_TODAY:today
 /* 当月判断：仅比较「年-月」前缀，用于首页统计由「今日」改为「当月」汇总 */
 function isThisMonth(dt){ if(!dt)return false; const t=PLANT_TODAY; if(!t)return false; return String(dt).slice(0,7)===String(t).slice(0,7); }
 /* 总厂(Sagamu)或全局视角(老板+ALL)：开放造粒与成品出售；分厂(OPIC/Ikeja)不开放（分厂无造粒产能、不出售颗粒） */
-function isHQorAllFactory(){ return (currentRole==='boss'&&currentFactory==='ALL')||currentFactory==='Sagamu'; }
+function isHQorAllFactory(){ return (isTopAllView())||currentFactory==='Sagamu'; }
 const COLORS=['透明','单色','白色','红色','黄色','蓝色','绿色','紫色','黑色','VJ','GBT','杂色'];
 const COLOR_LABELS={
   zh:{'透明':'透明','单色':'单色','白色':'白色','红色':'红色','黄色':'黄色','蓝色':'蓝色','绿色':'绿色','紫色':'紫色','黑色':'黑色','VJ':'VJ','GBT':'GBT','杂色':'杂色','管子':'管子','扣板':'扣板','混合':'混合','GBT桶':'GBT桶','勺子':'勺子','yellow黄桶':'yellow黄桶','天花板':'天花板'},
@@ -1939,11 +1945,11 @@ function scopeRecords(){
   /* 与 visibleRecords 保持同一工厂过滤口径：仅按 record.factory 过滤。
      Inbound/Ship 记录的 factory 字段已写入目标工厂（如总厂 Sagamu），
      故无需额外按类型混入，避免总厂/分厂视图口径不一致导致统计或明细显示错位。 */
-  if(currentRole==='boss'&&currentFactory==='ALL')return records;
+  if(isTopAllView())return records;
   const f=currentFactory; return records.filter(r=> r.factory===f);
 }
 function recomputeDashboard(){
-  const scope=(currentRole==='boss'&&currentFactory==='ALL')?'ALL':currentFactory;
+  const scope=(isTopAllView())?'ALL':currentFactory;
   const recs=scopeRecords().filter(r=>isThisMonth(r.dt));
   let recKg=0,recAmt=0,crushed=0,bulk=0,shipW=0,crushW=0,prodW=0,saleW=0,saleAmt=0,pendingW=0;
   recs.forEach(r=>{
@@ -1974,7 +1980,7 @@ function recomputeDashboard(){
   setC(6,t('d_ov_expense'),fmtExpense(expense,'NGN'));
   setC(7,t('d_ov_balance'),M(balance));
   /* 分厂无造粒/无出售颗粒/无进账/无余额：非总厂、非全局视角时隐藏对应统计卡（保留支出卡，分厂仍记录支出） */
-  const isHQorAll=(currentRole==='boss'&&currentFactory==='ALL')||currentFactory==='Sagamu';
+  const isHQorAll=(isTopAllView())||currentFactory==='Sagamu';
   const hideForBranch=!isHQorAll;
   ['dash-card-5','dash-card-7','dash-card-8','dash-card-9'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=hideForBranch?'none':'';});
   setC(8,t('d_ov_produced'),kg(prodW));
@@ -1985,7 +1991,7 @@ function recomputeDashboard(){
 function dashTrendData(){
   const base=new Date(PLANT_TODAY);const days=[];
   for(let i=6;i>=0;i--){const d=new Date(base);d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10));}
-  const isHQ=(currentRole==='boss'&&currentFactory==='ALL')||currentFactory==='Sagamu';
+  const isHQ=(isTopAllView())||currentFactory==='Sagamu';
   const recv=days.map(dt=>scopeRecords().filter(r=>r.ty==='Receive'&&r.dt===dt).reduce((s,r)=>s+r.tw,0));
   const ship=days.map(dt=>scopeRecords().filter(r=>(isHQ?r.ty==='Inbound':r.ty==='Ship')&&r.dt===dt).reduce((s,r)=>s+r.tw,0));
   const wd=['日','一','二','三','四','五','六'];
@@ -1993,7 +1999,7 @@ function dashTrendData(){
   return {recv,ship,labels,isHQ};
 }
 function dashInvData(){
-  const scope=(currentRole==='boss'&&currentFactory==='ALL')?'ALL':currentFactory;
+  const scope=(isTopAllView())?'ALL':currentFactory;
   const inv=computeInventory(scope);const fr=flattenRaw(inv);
   const mats=['PP','PE','PVC'];
   const v=mats.map(m=>(fr[m+'|大料']||0)+(fr[m+'|破碎料']||0));
@@ -2226,12 +2232,12 @@ function toNGN(amount,currency){amount=+amount||0;return currency==='NGN'?amount
 function fmtCur(amount,currency){return curSymbol(currency)+(Math.round((+amount||0)*100)/100).toLocaleString();}
 /* 按指定汇率折算为 CNY；缺省汇率时回退当前汇率（老记录没有 fx 字段时的兼容路径） */
 function toCNYAt(amount,currency,rate){ amount=+amount||0; return currency==='NGN'?amount/(rate>0?rate:fxRate()):amount; }
-/* 主币金额 +（老板且已设汇率时）自动换算的另一货币。
+/* 主币金额 +（顶层角色且已设汇率时）自动换算的另一货币。
    记录自带入账汇率时按它折算，保证「改汇率不篡改历史账」。 */
 function fmtWithFx(amount,currency,rate){
   const r=(rate>0)?rate:fxRate();
   const main=fmtCur(amount,currency);
-  if(currentRole==='boss'&&r>0){
+  if(isTopRole()&&r>0){
     const cny=toCNYAt(amount,currency,r);
     const other=currency==='NGN'?('¥ '+fmtMoney(cny)):('₦ '+fmtMoney(cny*r));
     return main+' <small style="color:var(--muted);font-weight:500">('+other+')</small>';
@@ -2250,7 +2256,7 @@ function fmtExpense(amount,currency,rate){
   return main;
 }
 function finFactoryOptions(){
-  if(currentRole==='boss') return ALL_FACTORY_IDS.map(f=>`<option value="${f}">${FACTORIES[f]?FACTORIES[f].name:f}</option>`).join('');
+  if(isTopRole()) return ALL_FACTORY_IDS.map(f=>`<option value="${f}">${FACTORIES[f]?FACTORIES[f].name:f}</option>`).join('');
   const f=currentFactory; return `<option value="${f}">${FACTORIES[f]?FACTORIES[f].name:f}</option>`;
 }
 function finCatOptions(type,factory,sel){
@@ -2273,7 +2279,7 @@ function openFinModal(){
   document.getElementById('fin-modal-title').textContent=t('fin_add');
   document.getElementById('fin-date').value=PLANT_TODAY;
   const ff=document.getElementById('fin-factory'); ff.innerHTML=finFactoryOptions();
-  const scope=(currentRole==='boss'&&currentFactory===ALL_VIEW)?(finScope&&finScope!==ALL_VIEW?finScope:'Sagamu'):currentFactory;
+  const scope=(isTopAllView())?(finScope&&finScope!==ALL_VIEW?finScope:'Sagamu'):currentFactory;
   ff.value=scope;
   const ts=document.getElementById('fin-type'); ts.value='expense';
   document.getElementById('fin-cat').innerHTML=finCatOptions('expense', scope, '');
@@ -2308,7 +2314,7 @@ function saveFinModal(){
   if(type==='income' && !finHasIncome(factory)){err.textContent=lang==='zh'?'该工厂仅记录支出，无进项':'This plant records expense only';err.classList.remove('hidden');return;}
   if(!cat){err.textContent=lang==='zh'?'请选择类别':'Select category';err.classList.remove('hidden');return;}
   if(amount<=0){err.textContent=lang==='zh'?'金额需大于 0':'Amount must be > 0';err.classList.remove('hidden');return;}
-  /* fx：入账时锁定当时的汇率。此后老板调整汇率，这条记录仍按当时汇率折算，历史账不被追溯篡改。 */
+  /* fx：入账时锁定当时的汇率。此后任何人调整汇率，这条记录仍按当时汇率折算，历史账不被追溯篡改。 */
   const data={dt,factory,type,cat,amount,currency,fx:fxRate(),note:document.getElementById('fin-note').value.trim(),by:opName(),ts:Date.now(),auto:false};
   if(editingFinId){
     const f=finances.find(x=>x.id===editingFinId); if(!f){closeFinModal();return;}
@@ -2379,10 +2385,10 @@ function finTablePanel(titleKey,type,list){
 }
 function renderFinance(){
   if(!can('finance.view')){toast(lang==='zh'?'无财务查看权限':'No finance permission');return;}
-  const scope=(currentRole==='boss'&&currentFactory===ALL_VIEW)?(finScope||ALL_VIEW):currentFactory;
+  const scope=(isTopAllView())?(finScope||ALL_VIEW):currentFactory;
   const sb=document.getElementById('fin-scope');
   if(sb){
-    if(currentRole==='boss'&&currentFactory===ALL_VIEW){
+    if(isTopAllView()){
       sb.style.display='';
       const opts=[['Sagamu','总厂'],['OPIC','OPIC'],['Ikeja','IKEJA'],['ALL','全部汇总']];
       sb.innerHTML=opts.map(([v,l])=>`<button data-fs="${v}" class="${finScope===v?'active':''}" ${act('setFinScope',v)}>${l}</button>`).join('');
@@ -2801,7 +2807,7 @@ function renderShipRows(){
 function renderShipList(){
   const el=document.getElementById('ship-list');if(!el)return;
   const fac=effectiveFactory();
-  const list=records.filter(r=>r.ty==='Ship'&&(currentRole==='boss'&&currentFactory===ALL_VIEW||r.factory===fac||(currentRole==='boss'&&currentFactory==='Sagamu')));
+  const list=records.filter(r=>r.ty==='Ship'&&(isTopAllView()||r.factory===fac||(isTopRole()&&currentFactory==='Sagamu')));
   if(!list.length){el.innerHTML=`<tr><td colspan="7" class="muted">${lang==='zh'?'暂无发货记录':'No shipments'}</td></tr>`;return;}
   el.innerHTML=list.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory)}</td><td>${esc(r.batch)}</td><td>${esc(r.dest||'—')}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" ${act('editShip',r.id)}>${t('edit')}</span> · <span class="link" style="color:var(--danger)" ${act('deleteShip',r.id)}>${t('delete')}</span></td></tr>`).join('');
 }
@@ -2918,7 +2924,7 @@ function statusTag(s){
 }
 /* ===== Reconstructed JS (Crush module intentionally removed) ===== */
 const titles={dashboard:'nav_dashboard',receiving:'nav_receiving',today:'nav_today',customers:'nav_customers',produce:'nav_produce',sell:'nav_sell',inventory:'nav_inventory',shipping:'nav_shipping',logistics:'nav_logistics',pricing:'nav_pricing',search:'nav_search',reports:'nav_reports',settings:'nav_settings'};
-const roleBadgeMap={boss:{zh:'老板',en:'Boss'},devAdmin:{zh:'开发管理员',en:'Dev Admin'},factoryAdmin:{zh:'工厂管理员',en:'Factory Admin'},registrar:{zh:'登记员',en:'Registrar'},auditor:{zh:'审计员',en:'Auditor'}};
+const roleBadgeMap={boss:{zh:'老板',en:'Boss'},devAdmin:{zh:'管理员（全权限）',en:'Admin (full)'},factoryAdmin:{zh:'工厂管理员',en:'Factory Admin'},registrar:{zh:'登记员',en:'Registrar'},auditor:{zh:'审计员',en:'Auditor'}};
 const lanDevices=[{name:'OPIC 终端',ip:'192.168.1.21'},{name:'Ikeja 终端',ip:'192.168.1.22'},{name:'仓库 PDA',ip:'192.168.1.30'}];
 let currentPeriod='month'; /* 报表周期：month / quarter / year / all */
 
@@ -3213,7 +3219,7 @@ function renderInventory(){
   const rawRows=rawKeys.map(k=>{
     const [m,f]=k.split('|');const base=Math.round(fr[k]||0);const ov=invRawEdit[k];
     const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?ov.w:(base+(invAdjustRaw[k]||0));
-    if(currentRole==='boss'){
+    if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" onchange="editRawInv(this.getAttribute('data-k'),'m',this.value)" style="width:72px"/></td>
         <td><input class="inv-mat-t" type="text" value="${esc(curF)}" data-k="${esc(k)}" data-field="f" onchange="editRawInv(this.getAttribute('data-k'),'f',this.value)" style="width:72px"/></td>
         <td class="num"><input class="inv-adj" type="number" min="0" step="1" value="${Math.round(curW)}" data-k="${esc(k)}" data-field="w" onchange="editRawInv(this.getAttribute('data-k'),'w',+this.value)" style="width:90px"/> kg<button data-k="${esc(k)}" onclick="deleteInvEntry('raw',this.getAttribute('data-k'))" title="${t('inv_del')}" style="margin-left:6px;border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px">✕</button></td></tr>`;
@@ -3229,7 +3235,7 @@ function renderInventory(){
   const pelRows=pelKeys.map(k=>{
     const [m,c]=k.split("|");const base=Math.round((pel[k]||0)/BAG_KG);const ov=invPelletEdit[k];
     const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?ov.bags:(base+(invAdjust[k]||0));
-    if(currentRole==='boss'){
+    if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" onchange="editPelletInv(this.getAttribute('data-k'),'m',this.value)" style="width:60px"/></td>
         <td><input class="inv-mat-t" type="text" value="${esc(curC||'—')}" data-k="${esc(k)}" data-field="c" onchange="editPelletInv(this.getAttribute('data-k'),'c',this.value)" style="width:80px"/></td>
         <td class="num"><input class="inv-adj" type="number" min="0" value="${Math.round(curB)}" data-k="${esc(k)}" data-field="bags" onchange="editPelletInv(this.getAttribute('data-k'),'bags',+this.value)" style="width:70px"/> ${unitBag()}<button data-k="${esc(k)}" onclick="deleteInvEntry('pellet',this.getAttribute('data-k'))" title="${t('inv_del')}" style="margin-left:6px;border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px">✕</button></td></tr>`;
@@ -3239,7 +3245,7 @@ function renderInventory(){
   const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round((pel[k]||0)/BAG_KG);return s+(ov?ov.bags:(base+(invAdjust[k]||0)));},0);
   const pelFoot=pelKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'成品合计':'Finished total'}</td><td class="num">${Math.round(pelTotalBags).toLocaleString()} ${unitBag()}</td></tr>`:'';
   setHTML('inv-pellet', (pelRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无成品库存':'No finished stock'}</td></tr>`)+pelFoot);
-  if(currentRole==='boss'){ const h=document.getElementById('inv-edit-hint'); if(h)h.style.display=''; } else { const h=document.getElementById('inv-edit-hint'); if(h)h.style.display='none'; }
+  if(isTopRole()){ const h=document.getElementById('inv-edit-hint'); if(h)h.style.display=''; } else { const h=document.getElementById('inv-edit-hint'); if(h)h.style.display='none'; }
   renderCatalog();
   populateInvAddSelects();
 }
@@ -3316,7 +3322,7 @@ function deleteInvEntry(kind,key){
 }
 
 /* ===== Logistics ===== */
-function logisticsAllScope(){return (currentRole==='boss'&&currentFactory===ALL_VIEW)||currentFactory==='Sagamu';}
+function logisticsAllScope(){return (isTopAllView())||currentFactory==='Sagamu';}
 function renderLogistics(){
   /* 进入物流协同时主动与云端同步一次（节流 20s），保证总厂及时看到分厂发来的待入库单。
      关键：同步是异步的，旧版 fire-and-forget 拉完不重渲染，用户进页面只看到空列表，
@@ -3523,7 +3529,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    ③ 不随同步上传，各设备汇率不一致，同一笔账在两台机器上金额不同；
    ④ 改汇率会追溯重算全部历史记录（历史金额被"事后改汇率"污染）。
    新实现：
-   ① 权限收敛为 fx.manage，仅老板；fx.view 给老板 + 技术超管（只读）；
+   ① 权限收敛为 fx.manage 与 fx.view 一并归入 TOP_PERMS，老板与管理员共用；其余角色既看不见也改不了；
    ② settings.fx = {rate, ts, by, hist:[{rate,ts,by}]}，每次改动留痕；
    ③ 随 /sync/push 上传、/sync/pull 下发，按 ts 做 LWW，全厂一致；
    ④ 新记录入账时锁定当时汇率 r.fx，显示与汇总优先用记录自带汇率，历史账不被追溯篡改。 */
@@ -3579,7 +3585,7 @@ function fxHistRows(){
       +`<td class="small muted">${h.ts?esc(new Date(h.ts).toLocaleDateString()):'—'}</td></tr>`;
   }).join('');
 }
-function renderFxTab(){
+function renderFxTabInner(){
   const body=document.getElementById('fx-body'); if(!body)return;
   const pill=document.getElementById('fx-scope-pill');
   if(!can('fx.view')){
@@ -3623,10 +3629,14 @@ function renderFxTab(){
 }
 /* 设置页权限标签：依据 data-perm 声明式显隐（单一数据源），渲染时统一计算，
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
+/* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
+   排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
+const APP_BUILD='2026-08-28d';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
   });
+  const ab=document.getElementById('app-build'); if(ab)ab.textContent='build '+APP_BUILD;
 }
 function updateRoleBadge(){
   const rb=roleBadgeMap[currentRole]?roleBadgeMap[currentRole][lang]:'';
@@ -3830,7 +3840,7 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
       settings.fx={rate:remoteFx.rate, ts:remoteFx.ts||Date.now(), by:remoteFx.by||'',
                    hist:Array.isArray(remoteFx.hist)?remoteFx.hist.slice(0,50):_f.hist.slice()};
       settings.rate=remoteFx.rate; /* 兼容仍在直读 settings.rate 的代码路径 */
-      if(typeof renderFxTab==='function'&&document.getElementById('fx-body'))renderFxTab();
+      if(typeof renderFxTab==='function')renderFxTab();
     }
   }
   /* 最终闸门：无论上游怎么合并，本地墓碑命中的记录一条都不许留下 */
@@ -4029,7 +4039,7 @@ function nowHMS(){const d=new Date();const p=n=>String(n).padStart(2,'0');return
 function today(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 function opName(){return currentUser?currentUser.name:'—';}
 function hideEmptyGroups(){document.querySelectorAll('#nav .nav-group').forEach(g=>{let sib=g.nextElementSibling,vis=false;while(sib&&sib.classList&&!sib.classList.contains('nav-group')){if(sib.tagName==='A'&&sib.style.display!=='none')vis=true;sib=sib.nextElementSibling;}g.style.display=vis?'':'none';});}
-function loginFactoryOptions(u){const user=users.find(x=>x.username===u);if(!user)return [{value:'',label:'—'}];const opts=user.factories.map(f=>({value:f,label:FACTORIES[f]?FACTORIES[f].name+' · '+(FACTORIES[f].loc||''):f}));if(user.role==='boss')opts.unshift({value:ALL_VIEW,label:lang==='zh'?'全部工厂':'All plants'});return opts;}
+function loginFactoryOptions(u){const user=users.find(x=>x.username===u);if(!user)return [{value:'',label:'—'}];const opts=user.factories.map(f=>({value:f,label:FACTORIES[f]?FACTORIES[f].name+' · '+(FACTORIES[f].loc||''):f}));if(isTopRole(user.role))opts.unshift({value:ALL_VIEW,label:lang==='zh'?'全部工厂':'All plants'});return opts;}
 
 /* ===== Auth / Nav ===== */
 function populateLoginFactory(){
@@ -4158,8 +4168,8 @@ function updateFactoryUI(){
   const ind=document.getElementById('fac-ind'), sw=document.getElementById('fac-switch'), ct=document.getElementById('company-tag');
   if(ct)ct.textContent=COMPANY.name+' · '+COMPANY.nameEn;
   const sc=document.getElementById('side-company'); if(sc)sc.textContent=COMPANY.name;
-  if(ind){ if(currentRole==='boss'&&currentFactory===ALL_VIEW)ind.textContent=(lang==='zh'?'全部工厂':'All plants'); else{const f=FACTORIES[currentFactory];ind.textContent=f?(f.name+' · '+f.loc):'—';} }
-  if(sw){ if(currentRole==='boss'){sw.style.display='';sw.value=currentFactory||'Sagamu';} else sw.style.display='none'; }
+  if(ind){ if(isTopAllView())ind.textContent=(lang==='zh'?'全部工厂':'All plants'); else{const f=FACTORIES[currentFactory];ind.textContent=f?(f.name+' · '+f.loc):'—';} }
+  if(sw){ if(isTopRole()){sw.style.display='';sw.value=currentFactory||'Sagamu';} else sw.style.display='none'; }
 }
 function switchFactory(v){
   currentFactory=v;
@@ -4265,8 +4275,8 @@ function refreshControls(){
   const show=(id,ok)=>{const e=document.getElementById(id);if(e)e.style.display=ok?'':'none';};
   show('btn-logout',!!currentUser);
   show('cust-new',can('customer.create'));
-  show('rc-factory-wrap', currentRole==='boss'&&currentFactory===ALL_VIEW);
-  show('s-factory-wrap', currentRole==='boss'&&currentFactory===ALL_VIEW);
+  show('rc-factory-wrap', isTopAllView());
+  show('s-factory-wrap', isTopAllView());
   const cd=document.getElementById('cd-del-btn'); if(cd)cd.style.display=can('customer.delete')?'':'none';
   document.querySelectorAll('.pp-apply').forEach(b=>b.style.display=can('pricing')?'':'none');
   /* 分厂不开放造粒与成品出售：隐藏对应导航入口（总厂/全局视角才显示） */
@@ -4274,7 +4284,7 @@ function refreshControls(){
   const navSell=document.querySelector('#nav a[data-view="sell"]'); if(navSell)navSell.style.display=hq?'':'none';
   const navProd=document.querySelector('#nav a[data-view="produce"]'); if(navProd)navProd.style.display=hq?'':'none';
   const cmf=document.getElementById('cm-factory'), cmfr=document.getElementById('cm-factory-readonly');
-  if(cmf&&cmfr){ if(currentRole==='boss'&&currentFactory===ALL_VIEW){cmf.style.display='';cmfr.textContent='';} else {cmf.style.display='none';const f=FACTORIES[currentFactory];cmfr.textContent=f?(f.name+' · '+f.loc):'—';} }
+  if(cmf&&cmfr){ if(isTopAllView()){cmf.style.display='';cmfr.textContent='';} else {cmf.style.display='none';const f=FACTORIES[currentFactory];cmfr.textContent=f?(f.name+' · '+f.loc):'—';} }
 }
 function openForceChange(){const m=document.getElementById('pwd-modal');if(m)m.classList.remove('hidden');}
 function submitForceChange(){
@@ -4460,7 +4470,7 @@ function deleteAccount(username){
   const u=users.find(x=>x.username===username);if(!u)return;
   if(currentUser && username===currentUser.username){ toast(lang==='zh'?'不能删除当前登录的账号':'Cannot delete your own account'); return; }
   /* 保护：不允许删除最后一个老板/开发管理员，避免账号系统锁死；其余（含新建老板）均可删 */
-  if((u.role==='boss'||u.role==='devAdmin') && users.filter(x=>x.role===u.role).length<=1){ toast(lang==='zh'?'不能删除最后一个'+(roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role)+'账号':'Cannot delete the last '+u.role); return; }
+  if((isTopRole(u.role)) && users.filter(x=>x.role===u.role).length<=1){ toast(lang==='zh'?'不能删除最后一个'+(roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role)+'账号':'Cannot delete the last '+u.role); return; }
   if(!confirm(lang==='zh'?`确认删除账号 ${username}？`:`Delete ${username}?`))return;
   const done=()=>{
     users=users.filter(x=>x.username!==username);
@@ -4643,3 +4653,26 @@ function viewProduceDetail(id){
 
 </body>
 </html>
+
+/* renderFxTab 包装层：容器自愈 + 异常可视化。
+   ① 线上 HTML 与 JS 版本不一致时（旧 index.html 里没有 #fx-body），原本会退化成
+      「只有面板框、里面全空」且没有任何报错——这类问题最难排查。这里兜底给
+      #tab-rate 的 .panel-body 补上 id，保证面板永远有内容。
+   ② 渲染过程一旦抛错，把错误直接写进面板并打到控制台，不再静默空白。 */
+function renderFxTab(){
+  let body=document.getElementById('fx-body');
+  if(!body){
+    const panel=document.getElementById('tab-rate');
+    const cand=panel&&panel.querySelector('.panel-body');
+    if(cand){ cand.id='fx-body'; body=cand; }
+  }
+  if(!body){
+    if(window.console)console.error('[FX] 缺少 #fx-body 容器：当前页面的 HTML 与 JS 版本不一致，请确认已把最新 index.html 上传到与 app-server.js 相同的目录');
+    return;
+  }
+  try{ renderFxTabInner(); }
+  catch(err){
+    body.innerHTML='<div class="note">'+(lang==='zh'?'汇率面板渲染失败：':'FX panel failed: ')+esc((err&&err.message)||String(err))+'</div>';
+    if(window.console)console.error('[FX] renderFxTab',err);
+  }
+}
