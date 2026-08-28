@@ -87,6 +87,9 @@ let invPelletEdit = {};
 /* 库存删除墓碑：kind -> {key: deleteTs}。让"删除库存条目"跨设备生效、且不被合并存储复活
    （被删的键在 push 中 absent，Object.assign 合并不会移除它，必须由墓碑显式剔除）。 */
 let invDeleted = { raw:{}, pellet:{} };
+/* 汇率（1 CNY = ? NGN）：服务端权威，按 ts 做 LWW。
+   此前汇率只存在各设备本地 settings，同一笔账在不同机器上会算出不同金额。 */
+let fx = null; // {rate, ts, by, hist:[{rate,ts,by,prev}]}
 /* 账号「服务端权威」主数据：username -> {username,name,role,factories,salt,passwordHash,mustChange,updatedTs,deleted}
    所有登录/改密/建号均由服务器落盘，天然跨设备一致（彻底根治党本"换设备登不上/改密不生效"）。
    注意：与 usersById 并存；usersById 保留仅用于旧版业务同步兼容，不参与登录校验。 */
@@ -119,6 +122,7 @@ try {
     if (d.invRawEdit && typeof d.invRawEdit === 'object') invRawEdit = d.invRawEdit;
     if (d.invPelletEdit && typeof d.invPelletEdit === 'object') invPelletEdit = d.invPelletEdit;
     if (d.invDeleted && typeof d.invDeleted === 'object') invDeleted = { raw: (d.invDeleted.raw || {}), pellet: (d.invDeleted.pellet || {}) };
+    if (d.fx && typeof d.fx === 'object' && d.fx.rate > 0) fx = { rate: d.fx.rate, ts: d.fx.ts || 0, by: d.fx.by || '', hist: Array.isArray(d.fx.hist) ? d.fx.hist.slice(0, 50) : [] };
     console.log('[sync] 已载入本地账本：%d 条记录，%d 条删除墓碑；账号 %d；客户 %d；财务 %d',
       Object.keys(ledger).length, deleted.length, Object.keys(usersById).length, Object.keys(customersById).length, Object.keys(financesById).length);
   }
@@ -253,7 +257,7 @@ function persist() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
+    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, fx, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
     const packed = encryptData(plain);
     const payload = packed.enc ? ('ENC:' + packed.data) : plain;
     /* 落盘失败必须重试并留痕：只 console.warn 一次会造成「业务显示成功、重启后数据没了」的静默丢失 */
@@ -660,15 +664,23 @@ const server = http.createServer(async (req, res) => {
     if (!authOk(req)) { sendJSON(res, 401, { ok: false, error: 'unauthorized' }, req); return; }
     let body;
     try { body = await readBody(req); } catch (e) { sendJSON(res, 400, { ok: false, error: 'bad json' }, req); return; }
-    const recs = Array.isArray(body.records) ? body.records : [];
-    recs.forEach(mergeRecord);
     const del = Array.isArray(body.deleted) ? body.deleted : [];
     const now = Date.now();
+    /* 先落墓碑再合并记录：同一批次里「记录 + 它的删除墓碑」同时到达时，记录根本进不去。
+       旧版顺序相反，若中途抛异常或记录 id 与墓碑 id 类型不一致，就会把已删记录重新写回 ledger。 */
     del.forEach(id => {
       if (id == null) return;
       delete ledger[id];
       if (deleted.findIndex(t => t.id === id) < 0) deleted.push({ id, ts: now });
     });
+    (Array.isArray(body.records) ? body.records : []).forEach(mergeRecord);
+    /* 汇率：按 ts 做 LWW，谁最新听谁的（通常由老板账号写入） */
+    if (body.fx && typeof body.fx === 'object' && body.fx.rate > 0) {
+      const incTs = body.fx.ts || 0;
+      if (!fx || incTs > (fx.ts || 0)) {
+        fx = { rate: body.fx.rate, ts: incTs || now, by: body.fx.by || '', hist: Array.isArray(body.fx.hist) ? body.fx.hist.slice(0, 50) : (fx && fx.hist ? fx.hist : []) };
+      }
+    }
     // 账号同步
     (Array.isArray(body.users) ? body.users : []).forEach(mergeUser);
     (Array.isArray(body.deletedUsers) ? body.deletedUsers : []).forEach(un => {
@@ -765,7 +777,8 @@ const server = http.createServer(async (req, res) => {
       invAdjustRaw: invAdjustRaw,
       invRawEdit: invRawEdit,
       invPelletEdit: invPelletEdit,
-      invDeleted: invDeleted
+      invDeleted: invDeleted,
+      fx: fx
     }, req);
     return;
   }
