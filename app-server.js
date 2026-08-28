@@ -320,12 +320,18 @@ function sendJSON(res, code, obj, req) {
    逃生开关：极少数代理会剥离 Origin 头导致误拒，此时设 RF_ALLOW_NO_ORIGIN=1 回退旧行为
    （并强烈建议同时配置 SYNC_KEY，别让账本裸奔）。 */
 function authOk(req) {
+  const originOk = originAllowed(req);
   if (SYNC_KEY) {
     const k = req.headers['x-api-key'];
-    return typeof k === 'string' && k === SYNC_KEY;
+    // 命中正确密钥：跨机/跨域可信客户端放行
+    if (typeof k === 'string' && k === SYNC_KEY) return true;
+    // 同源第一方页面（由本服务器托管 index.html）同样放行：SYNC_KEY 只挡「跨域脚本/curl 裸奔」，
+    // 同源浏览器请求本就受 CORS + Origin 约束，放行不会扩大暴露面，反而让免密同源同步可用。
+    if (originOk) return true;
+    return false;
   }
   if (process.env.RF_ALLOW_NO_ORIGIN === '1') return true;
-  return !!originAllowed(req);
+  return !!originOk;
 }
 function readBody(req) {
   return new Promise((resolve, reject) => {

@@ -1931,11 +1931,19 @@ function svgBar(el,labels,vals,col){
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
 }
 function svgPie(el,segs){
-  const cx=110,cy=100,r=78;let tot=segs.reduce((s,x)=>s+x.v,0);let a0=-Math.PI/2;
-  let parts=segs.map(s=>{const a1=a0+s.v/tot*Math.PI*2;const large=(a1-a0)>Math.PI?1:0;
+  const cx=110,cy=100,r=78;
+  const data=(segs||[]).map(s=>({l:s.l,c:s.c||'#cbd5e1',v:Number(s.v)||0})).filter(s=>isFinite(s.v));
+  let tot=data.reduce((s,x)=>s+x.v,0);
+  if(!isFinite(tot)||tot<=0){
+    const nd=(typeof lang!=='undefined'&&lang==='zh')?'暂无数据':'No data';
+    el.innerHTML=`<div style="display:flex;gap:18px;align-items:center"><svg viewBox="0 0 220 200" width="220" height="200"><circle cx="${cx}" cy="${cy}" r="${r}" fill="#eef2f7"/></svg><div style="font-size:12px;color:#94a3b8">${nd}</div></div>`;
+    return;
+  }
+  let a0=-Math.PI/2;
+  let parts=data.map(s=>{const a1=a0+s.v/tot*Math.PI*2;const large=(a1-a0)>Math.PI?1:0;
     const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);a0=a1;
     return `<path d="M${cx} ${cy} L${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${s.c}"/>`;}).join('');
-  let lg=segs.map(s=>`<div style="display:flex;align-items:center;gap:6px;margin:4px 0"><i style="width:10px;height:10px;border-radius:2px;background:${s.c};display:inline-block"></i><span style="font-size:12px">${s.l} · ${tot>0?Math.round(s.v/tot*100):0}%</span></div>`).join('');
+  let lg=data.map(s=>`<div style="display:flex;align-items:center;gap:6px;margin:4px 0"><i style="width:10px;height:10px;border-radius:2px;background:${s.c};display:inline-block"></i><span style="font-size:12px">${s.l} · ${Math.round(s.v/tot*100)}%</span></div>`).join('');
   el.innerHTML=`<div style="display:flex;gap:18px;align-items:center"><svg viewBox="0 0 220 200" width="220" height="200">${parts}</svg><div>${lg}</div></div>`;
 }
 
@@ -3631,7 +3639,7 @@ function renderFxTabInner(){
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-08-28d';
+const APP_BUILD='2026-08-28e';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
