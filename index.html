@@ -851,7 +851,7 @@
           <button data-t="audit" onclick="setTab('audit',this)" data-i18n="set_audit" data-page-node-id="Ysqc2dbepbPBgdTrsnWZbW">审计日志</button>
           <button data-t="local" onclick="setTab('local',this)" data-i18n="set_local" data-page-node-id="W0MUTCxFxjOuAF73OaQXeX">本地化</button>
           <button data-t="accounts" onclick="setTab('accounts',this)" data-i18n="set_accounts" data-page-node-id="3BqXIIRjDRK615OImm2ITU">账号管理</button>
-          <button id="set-tab-rate" data-t="rate" onclick="setTab('rate',this)" data-i18n="set_rate" style="display:none" data-page-node-id="2TvwTb60XbeSrQVk4x1whw">汇率兑换</button>
+          <button id="set-tab-rate" data-t="rate" data-perm="finance.manage" onclick="setTab('rate',this)" data-i18n="set_rate" data-page-node-id="2TvwTb60XbeSrQVk4x1whw">汇率兑换</button>
         </div>
         <div id="tab-roles" class="panel" data-page-node-id="lvpEMHdkQ3NrNB03muzaJE"><div class="panel-head" data-page-node-id="Qqob9RqcDivYvQSzvaRYod"><h3 data-i18n="set_roles" data-page-node-id="MLgidDd2rdHA6BL5Sth9RP">角色与权限（RBAC）</h3></div>
           <div class="panel-body" style="padding:0" data-page-node-id="CcvCF6CSiOtlJHpJDotF5K"><table data-page-node-id="SBC2JxjGqPu9xJJTIbNlCF">
@@ -2752,6 +2752,8 @@ function deleteInbound(id){
   if(!confirm(lang==='zh'?`确认删除入库记录 ${inb.batch}？关联发货单状态将回退为在途，总厂原料库存回退。`:`Delete inbound ${inb.batch}? Linked shipment reverts to transit, HQ stock reverts.`))return;
   records=records.filter(x=>String(x.id)!==String(id));
   addTomb(id, currentRole);
+  /* 标记该发货单的入库已删除：reconcileAll 据此跳过、不再自动重建（修复「删除后复活」） */
+  if(inb.linkId!=null)addTomb('inbound:'+inb.linkId, currentRole);
   const ship=records.find(r=>String(r.id)===String(inb.linkId)&&r.ty==='Ship');if(ship)ship.status='在途';
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:inb.batch,detail:lang==='zh'?'删除入库记录':'deleted inbound'});
@@ -3303,12 +3305,18 @@ function renderRateTab(){const inp=document.getElementById('rate-input');if(inp)
 function rateInputLive(){const cur=document.getElementById('rate-current');const v=parseFloat((document.getElementById('rate-input')||{}).value)||0;if(cur)cur.textContent=(v>0)?('1 ¥ = '+v+' ₦'):('1 ¥ = '+(fxRate())+' ₦');}
 function saveRate(){if(!can('finance.manage')){toast(lang==='zh'?'无汇率修改权限（需财务权限）':'No permission to edit rate');return;}const v=parseFloat(document.getElementById('rate-input').value)||0;if(v<=0){toast(lang==='zh'?'汇率需大于 0':'Rate must be > 0');return;}settings.rate=v;saveState();renderFinance();recomputeDashboard();renderRateTab();toast(lang==='zh'?'汇率已保存：1 CNY = '+v+' NGN':'Rate saved: 1 CNY = '+v+' NGN');}
 function rateConvert2(){const r=fxRate();const cny=parseFloat((document.getElementById('cny-amt')||{}).value)||0;const ngn=parseFloat((document.getElementById('ngn-amt')||{}).value)||0;const cnyOut=document.getElementById('cny-out');if(cnyOut)cnyOut.textContent=(cny>0&&r>0)?(fmtMoney(cny*r)+' ₦'):'—';const ngnOut=document.getElementById('ngn-out');if(ngnOut)ngnOut.textContent=(ngn>0&&r>0)?(fmtMoney(ngn/r)+' ¥'):'—';}
-function toggleBossTabs(){const rt=document.getElementById('set-tab-rate');if(rt)rt.style.display=can('finance.manage')?'':'none';}
+/* 设置页权限标签：依据 data-perm 声明式显隐（单一数据源），渲染时统一计算，
+   不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
+function renderSettingsTabs(){
+  document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
+    b.style.display = can(b.dataset.perm) ? '' : 'none';
+  });
+}
 function updateRoleBadge(){
   const rb=roleBadgeMap[currentRole]?roleBadgeMap[currentRole][lang]:'';
   const badge=document.getElementById('role-badge'); if(badge)badge.textContent=(currentUser?currentUser.name+' · ':'')+rb;
   const av=document.getElementById('avatar'); if(av)av.textContent=(currentUser&&currentUser.name?currentUser.name:'?').substring(0,1);
-  toggleBossTabs();
+  renderSettingsTabs();
 }
 function updateSyncUI(){
   const on=settings.conn==='online';
@@ -3351,6 +3359,8 @@ function reconcileAll(){
   if(!Array.isArray(records))return 0;
   let fixed=0;
   records.filter(r=>r.ty==='Ship').forEach(function(ship){
+    /* 若该发货单的入库已被显式删除（墓碑标记），绝不自动重建——这是修复「删除后随同步复活」的关键 */
+    if(tombMeta['inbound:'+ship.id])return;
     const inb=records.find(r=>r.ty==='Inbound'&&r.linkId===ship.id);
     if(!inb){
       pushRec({id:genGid(),dt:ship.dt,ty:'Inbound',custId:0,custName:'来料入库',items:(ship.items||[]).map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note})),tw:ship.tw,ta:0,ticket:'',op:'auto',batch:ship.batch,dest:'',note:'from '+(ship.fromFac||ship.factory)+' · batch '+ship.batch,factory:'Sagamu',status:ship.status==='已入库'?'已入库':'待入库',linkId:ship.id,fromFac:ship.fromFac||ship.factory});
@@ -3414,7 +3424,11 @@ function syncPush(){
   });
   return fetch(SYNC.url()+'/sync/push',{method:'POST',headers:SYNC.headers(),body})
     .then(r=>r.json()).then(j=>{
-      if(j&&j.ok){ if(deletedGids.length){deletedGids=[]; tombMeta={};} settings.lastSync=nowStr(); settings.pending=0; saveState(); updateSyncUI(); }
+      if(j&&j.ok){
+        /* 仅清空「待推送删除清单」deletedGids；保留 tombMeta 作为永久墓碑守卫，避免删除记录被同步拉回复活 */
+        if(deletedGids.length){deletedGids=[];}
+        settings.lastSync=nowStr(); settings.pending=0; saveState(); updateSyncUI();
+      }
       return !!(j&&j.ok);
     }).catch(e=>{ console.warn('syncPush failed',e); return false; });
 }
@@ -3794,7 +3808,7 @@ function go(view){
   else if(view==='inventory')renderInventory();
   else if(view==='shipping'){renderShipRows();renderShipList();}
   else if(view==='reports')setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));
-  else if(view==='settings'){renderAccounts();toggleBossTabs();}
+  else if(view==='settings'){ try{renderAccounts();}catch(e){console.error('renderAccounts',e);} renderSettingsTabs(); }
   else if(view==='search')initSearchDates();
   else if(view==='finance')renderFinance();
   else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
