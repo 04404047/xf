@@ -3639,7 +3639,7 @@ function renderFxTabInner(){
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-08-28e';
+const APP_BUILD='2026-08-28f';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4602,6 +4602,29 @@ function viewProduceDetail(id){
   showModal('record-modal');
 }
 
+/* renderFxTab 包装层：容器自愈 + 异常可视化。
+   ① 线上 HTML 与 JS 版本不一致时（旧 index.html 里没有 #fx-body），原本会退化成
+      「只有面板框、里面全空」且没有任何报错——这类问题最难排查。这里兜底给
+      #tab-rate 的 .panel-body 补上 id，保证面板永远有内容。
+   ② 渲染过程一旦抛错，把错误直接写进面板并打到控制台，不再静默空白。 */
+function renderFxTab(){
+  let body=document.getElementById('fx-body');
+  if(!body){
+    const panel=document.getElementById('tab-rate');
+    const cand=panel&&panel.querySelector('.panel-body');
+    if(cand){ cand.id='fx-body'; body=cand; }
+  }
+  if(!body){
+    if(window.console)console.error('[FX] 缺少 #fx-body 容器：当前页面的 HTML 与 JS 版本不一致，请确认已把最新 index.html 上传到与 app-server.js 相同的目录');
+    return;
+  }
+  try{ renderFxTabInner(); }
+  catch(err){
+    body.innerHTML='<div class="note">'+(lang==='zh'?'汇率面板渲染失败：':'FX panel failed: ')+esc((err&&err.message)||String(err))+'</div>';
+    if(window.console)console.error('[FX] renderFxTab',err);
+  }
+}
+
 </script>
 <!-- ===================== Account modal ===================== -->
 <div id="acct-modal" class="modal hidden" data-page-node-id="aSlYKSf0CObCQMCLDkJEGv">
@@ -4661,26 +4684,3 @@ function viewProduceDetail(id){
 
 </body>
 </html>
-
-/* renderFxTab 包装层：容器自愈 + 异常可视化。
-   ① 线上 HTML 与 JS 版本不一致时（旧 index.html 里没有 #fx-body），原本会退化成
-      「只有面板框、里面全空」且没有任何报错——这类问题最难排查。这里兜底给
-      #tab-rate 的 .panel-body 补上 id，保证面板永远有内容。
-   ② 渲染过程一旦抛错，把错误直接写进面板并打到控制台，不再静默空白。 */
-function renderFxTab(){
-  let body=document.getElementById('fx-body');
-  if(!body){
-    const panel=document.getElementById('tab-rate');
-    const cand=panel&&panel.querySelector('.panel-body');
-    if(cand){ cand.id='fx-body'; body=cand; }
-  }
-  if(!body){
-    if(window.console)console.error('[FX] 缺少 #fx-body 容器：当前页面的 HTML 与 JS 版本不一致，请确认已把最新 index.html 上传到与 app-server.js 相同的目录');
-    return;
-  }
-  try{ renderFxTabInner(); }
-  catch(err){
-    body.innerHTML='<div class="note">'+(lang==='zh'?'汇率面板渲染失败：':'FX panel failed: ')+esc((err&&err.message)||String(err))+'</div>';
-    if(window.console)console.error('[FX] renderFxTab',err);
-  }
-}
