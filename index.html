@@ -1801,9 +1801,21 @@ function setLang(l){
   const lo=document.getElementById('lo-lang');if(lo)lo.value=lang;
   const ph={ 'rc-name':t('rc_name_ph'), 'rc-bank':t('rc_bank_ph') };
   for(const id in ph){const el=document.getElementById(id);if(el)el.placeholder=ph[id];}
-  renderCustomers(); renderPricing(); runSearch(); fillSearchType(); runChurn(); renderReceivingIfNeeded(); renderAudit(); updateSyncUI(); renderToday();
-  setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));
-  recomputeDashboard(); drawDashboardCharts(); updateRoleBadge(); renderLan();
+  updateSyncUI(); updateRoleBadge(); renderLan();
+  /* 性能优化：改语言时只重绘「当前激活视图」+ 无导航渲染分支的常驻视图（客户/今日/价格/审计）；
+     其余视图在进入时由 go() 按需重绘，避免一次同步重绘全部视图造成卡顿。 */
+  const _av=document.querySelector('.view.active'); const _avId=_av?( _av.id||'').replace(/^view-/,'') : null;
+  ['customers','today','pricing','audit'].forEach(function(v){
+    if(v===_avId) return;
+    if(v==='customers'&&typeof renderCustomers==='function')renderCustomers();
+    else if(v==='today'&&typeof renderToday==='function')renderToday();
+    else if(v==='pricing'&&typeof renderPricing==='function')renderPricing();
+    else if(v==='audit'&&typeof renderAudit==='function')renderAudit();
+  });
+  if(_avId){
+    go(_avId);
+    if(_avId==='search'){ if(typeof fillSearchType==='function')fillSearchType(); if(typeof runSearch==='function')runSearch(); }
+  }
 }
 
 /* ============ Charts (inline SVG) ============ */
@@ -1864,8 +1876,8 @@ function recomputeDashboard(){
   const kg=v=>Math.round(v).toLocaleString()+' <small>kg</small>';
   /* 首页总览：9 项指标（按工厂过滤；财务与回收金额统一折算为奈拉(NGN)主导口径汇总） */
   const finScope=finances.filter(f=>scope==='ALL'||f.factory===scope);
-  const income=finScope.filter(f=>f.type==='income').reduce((s,f)=>s+toNGN(f.amount,f.currency||'NGN'),0);
-  const expense=finScope.filter(f=>f.type==='expense').reduce((s,f)=>s+toNGN(f.amount,f.currency||'NGN'),0);
+  const income=finScope.filter(f=>f.type==='income').reduce((s,f)=>s+toNGN(toCNY(f.amount,f.currency||'NGN')),0);
+  const expense=finScope.filter(f=>f.type==='expense').reduce((s,f)=>s+toNGN(toCNY(f.amount,f.currency||'NGN')),0);
   const balance=income-expense;
   const M=v=>fmtWithFx(v,'NGN');
   setC(1,t('d_ov_bulk'),kg(bulk));
@@ -2260,7 +2272,7 @@ function finTablePanel(titleKey,type,list){
     <td>${f.dt}</td>
     <td>${esc(f.cat)}</td>
     <td class="num">${type==='expense'?fmtExpense(f.amount,f.currency||'NGN'):fmtWithFx(f.amount,f.currency||'NGN')}</td>
-    <td class="num muted small">${'₦ '+fmtMoney(toNGN(f.amount,f.currency||'NGN'))}</td>
+    <td class="num muted small">${'₦ '+fmtMoney(toNGN(toCNY(f.amount,f.currency||'NGN')))}</td>
     <td class="muted small">${esc(f.note||'')}${f.auto?` <span class="tag t-auto">${t('fin_auto')}</span>`:''}</td>
     <td>${esc(f.by||'')}</td>
     <td>${can('finance.manage')?`<span class="link" onclick="editFin('${f.id}')">${t('cd_edit')||'编辑'}</span> · <span class="link" style="color:var(--danger)" onclick="deleteFin('${f.id}')">${t('c_del')}</span>`:''}</td>
@@ -3310,6 +3322,8 @@ function updateSyncUI(){
   else if(!srv){ txt=(lang==='zh'?'⚠ 未连同步服务器 · 仅本机':'⚠ No sync server · local only'); col='#dc2626'; }
   else if(noKey){ txt=(lang==='zh'?'⚠ 同步未加密（无 API Key）':'⚠ Sync unencrypted (no API Key)'); col='#dc2626'; }
   else txt=t('sync_online');
+  if(syncState==='syncing'){ txt+=(lang==='zh'?' · 同步中…':' · syncing…'); }
+  else if(syncState==='error'){ txt+=(lang==='zh'?' · 同步失败':' · sync failed'); if(!col)col='#dc2626'; }
   const st=document.getElementById('sync-text');if(st){st.textContent=txt;st.style.color=col;}
   const ss=document.getElementById('side-sync');if(ss){ss.textContent=txt;ss.style.color=col;}
   const ct=document.getElementById('sy-conn-text');if(ct)ct.textContent=on?(lang==='zh'?'在线（4G）':'Online (4G)'):(lang==='zh'?'离线':'Offline');
@@ -3349,6 +3363,9 @@ function reconcileAll(){
 /* ===== 联网同步客户端（多厂协同） ===== */
 /* 同步以记录 id 为主键，按 ts 做 LWW 合并；删除通过 deletedGids 墓碑传播。
    服务端为最小同步服务（见 sync-server.js），零依赖 Node http。 */
+let syncState='idle';          /* idle | syncing | error —— 同步状态指示器 */
+let syncRetryTimer=null;       /* 同步失败后的有限退避重试定时器 */
+let syncLock=false;            /* 并发同步锁：防止手动+自动/多次点击同时跑造成竞态与重复 toash */
 const SYNC = {
   url(){ return (settings.syncUrl||'').trim(); },
   key(){ return (settings.syncKey||'').trim(); },
@@ -3419,7 +3436,7 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
     if(idx<0){ users.push(ru); }
     else if((ru.updatedTs||0) > (users[idx].updatedTs||0)){ users[idx]=ru; }
   });
-  (remoteDelUsers||[]).forEach(un=>{ if(un===currentUser.username)return; users=users.filter(u=>u.username!==un); if(deletedUsers.indexOf(un)<0)deletedUsers.push(un); });
+  (remoteDelUsers||[]).forEach(un=>{ if(currentUser&&un===currentUser.username)return; users=users.filter(u=>u.username!==un); if(deletedUsers.indexOf(un)<0)deletedUsers.push(un); });
   /* ---- 客户同步：按 id 做 LWW，使分厂录入的客户可在老板账号查看 ---- */
   const cmap={}; customers.forEach(c=>{cmap[c.id]=c;});
   (remoteCustomers||[]).forEach(rc=>{
@@ -3485,10 +3502,22 @@ function syncPull(){
       return true;
     }).catch(e=>{ console.warn('syncPull failed',e); return false; });
 }
-function syncTick(){
+function setSyncState(s){ syncState=s; updateSyncUI(); }
+function scheduleSyncRetry(attempt){
+  attempt=attempt||1;
+  if(attempt>3) return;                 // 最多重试 3 次，避免服务器持续不可达时死循环
+  if((settings.pending||0)<=0){ setSyncState('idle'); return; }
+  if(syncRetryTimer) return;
+  syncRetryTimer=setTimeout(function(){ syncRetryTimer=null; if(SYNC.enabled()&&(settings.pending||0)>0) syncTick(attempt+1); }, 15000);
+}
+function syncTick(att){
   if(!SYNC.enabled()) return;
-  if((settings.pending||0)>0) syncPush();
-  syncPull();
+  if(syncLock) return;
+  syncLock=true;
+  setSyncState('syncing');
+  const doPush=((settings.pending||0)>0)?syncPush():Promise.resolve(true);
+  doPush.then(function(){ return syncPull(); }).then(function(ok){ syncLock=false; setSyncState(ok?'idle':'error'); })
+    .catch(function(){ syncLock=false; setSyncState('error'); scheduleSyncRetry((att||0)+1); });
 }
 function renderSyncConfig(){
   const u=document.getElementById('sy-url'); if(u)u.value=settings.syncUrl||'';
@@ -3513,12 +3542,15 @@ function testSync(){
 }
 function doSync(){
   if(settings.conn!=='online'){toast(lang==='zh'?'当前离线，无法同步':'Offline — cannot sync');return;}
+  if(syncLock){toast(lang==='zh'?'同步进行中…':'Syncing…');return;}
   if(SYNC.enabled()){
+    syncLock=true;
+    setSyncState('syncing');
     toast(lang==='zh'?'正在同步到云端…':'Syncing to cloud…');
     syncPush().then(ok=>{
-      if(ok){ syncPull().then(p=>{ if(p)toast(lang==='zh'?'同步完成（已接收其他厂区数据）':'Synced (received other plants)'); else toast(lang==='zh'?'已上传，接收失败':'Uploaded, pull failed'); }); }
-      else { toast(lang==='zh'?'同步失败（检查服务器地址/密钥）':'Sync failed (check URL/key)'); }
-    });
+      if(ok){ syncPull().then(p=>{ syncLock=false; setSyncState(p?'idle':'error'); if(p)toast(lang==='zh'?'同步完成（已接收其他厂区数据）':'Synced (received other plants)'); else toast(lang==='zh'?'已上传，接收失败':'Uploaded, pull failed'); }); }
+      else { syncLock=false; setSyncState('error'); toast(lang==='zh'?'同步失败（检查服务器地址/密钥）':'Sync failed (check URL/key)'); }
+    }).catch(function(){ syncLock=false; setSyncState('error'); });
     return;
   }
   /* 未配置服务器：本地模拟同步（保持旧行为，便于单机使用） */
@@ -3762,7 +3794,7 @@ function go(view){
   else if(view==='inventory')renderInventory();
   else if(view==='shipping'){renderShipRows();renderShipList();}
   else if(view==='reports')setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));
-  else if(view==='settings')renderAccounts();
+  else if(view==='settings'){renderAccounts();toggleBossTabs();}
   else if(view==='search')initSearchDates();
   else if(view==='finance')renderFinance();
   else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
@@ -3817,8 +3849,12 @@ function submitForceChange(){
         if(j.ok && j.body.ok){ authToken=j.body.token; const c=loadCreds(); if(c){c.mustChange=false; c.verifier=j.body.user.verifier; saveCreds(c);} done(); }
         else { err.textContent=(j.body&&j.body.error==='old_wrong')?t('pwd_old_wrong'):(lang==='zh'?'改密失败，请重试':'Change failed'); }
       }).catch(()=>{
-        /* 断网回退：本地改密（下次联网会被服务端覆盖，仅保证离线可用） */
-        currentUser.salt=genSalt();currentUser.passwordHash=hashPassword(nw,currentUser.salt); done();
+        /* 断网回退：本地改密；写入待同步标记并刷新本地离线凭据，保证离线可登录、联网后自动传播（不再被服务端旧密码覆盖） */
+        const salt=genSalt();currentUser.salt=salt;currentUser.passwordHash=hashPassword(nw,salt);
+        currentUser.updatedTs=Date.now();settings.pending=(settings.pending||0)+1;
+        const c=loadCreds(); if(c){c.verifier=salt+'$'+currentUser.passwordHash;c.mustChange=false;saveCreds(c);}
+        syncPush();
+        done();
       });
     return;
   }
@@ -3977,6 +4013,7 @@ function renderAnnouncements(){
 function deleteAccount(username){
   if(!can('account.manage')){toast(lang==='zh'?'无账号管理权限（仅老板）':'No permission (boss only)');return;}
   const u=users.find(x=>x.username===username);if(!u)return;
+  if(currentUser && username===currentUser.username){ toast(lang==='zh'?'不能删除当前登录的账号':'Cannot delete your own account'); return; }
   /* 保护：不允许删除最后一个老板/开发管理员，避免账号系统锁死；其余（含新建老板）均可删 */
   if((u.role==='boss'||u.role==='devAdmin') && users.filter(x=>x.role===u.role).length<=1){ toast(lang==='zh'?'不能删除最后一个'+(roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role)+'账号':'Cannot delete the last '+u.role); return; }
   if(!confirm(lang==='zh'?`确认删除账号 ${username}？`:`Delete ${username}?`))return;

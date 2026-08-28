@@ -242,6 +242,7 @@ function mergeRecord(rec) {
   if (!rec || rec.id == null) return;
   // 墓碑中的记录永不复活；deleted 为 {id,ts} 对象数组，必须用 some 匹配（早先用 indexOf 对对象数组恒为 -1，导致删除被同步复活）
   if (deleted.some(t => t.id === rec.id)) return;
+  rec._srv = Date.now(); // 服务端接收时间戳：增量拉取基线（与 serverTime 同钟，避免客户端时钟偏差导致漏拉）
   const cur = ledger[rec.id];
   const ts = rec.ts || 0, rev = rec.rev || 0;
   const cts = cur ? (cur.ts || 0) : -1, crev = cur ? (cur.rev || 0) : -1;
@@ -253,6 +254,7 @@ function mergeRecord(rec) {
 function mergeUser(u) {
   if (!u || u.username == null) return;
   if (deletedUsers.some(t => t.id === u.username)) return;
+  u._srv = Date.now();
   const cur = usersById[u.username];
   if (!cur || (u.updatedTs || 0) > (cur.updatedTs || 0)) usersById[u.username] = u;
 }
@@ -260,6 +262,7 @@ function mergeUser(u) {
 function mergeCustomer(c) {
   if (!c || c.id == null) return;
   if (deletedCustomers.some(t => t.id === c.id)) return;
+  c._srv = Date.now();
   const cur = customersById[c.id];
   if (!cur || (c.updatedTs || 0) > (cur.updatedTs || 0)) customersById[c.id] = c;
 }
@@ -267,6 +270,7 @@ function mergeCustomer(c) {
 function mergeFinance(f) {
   if (!f || f.id == null) return;
   if (deletedFinances.some(t => t.id === f.id)) return;
+  f._srv = Date.now();
   const cur = financesById[f.id];
   if (!cur || (f.ts || 0) > (cur.ts || 0)) financesById[f.id] = f;
 }
@@ -514,10 +518,11 @@ const server = http.createServer(async (req, res) => {
     let since = parseInt(url.searchParams.get('since') || '0', 10);
     if (!(since > 0)) since = 0;
     const srvTime = Date.now();
-    const incRecords = Object.values(ledger).filter(r => (r.ts || 0) > since);
-    const incUsers = Object.values(usersById).filter(u => (u.updatedTs || 0) > since);
-    const incCustomers = Object.values(customersById).filter(c => (c.updatedTs || 0) > since);
-    const incFinances = Object.values(financesById).filter(f => (f.ts || 0) > since);
+    // 增量基线用服务端接收时间戳 _srv（与 since=serverTime 同钟）；旧数据缺 _srv 时回退 srvTime 保证全量包含
+    const incRecords = Object.values(ledger).filter(r => (r._srv || srvTime) > since);
+    const incUsers = Object.values(usersById).filter(u => (u._srv || srvTime) > since);
+    const incCustomers = Object.values(customersById).filter(c => (c._srv || srvTime) > since);
+    const incFinances = Object.values(financesById).filter(f => (f._srv || srvTime) > since);
     // 墓碑：仅返回删除时间晚于 since 的（首次 since=0 全量下发，保证历史清理一致）
     const incDeleted = deleted.filter(t => t.ts > since).map(t => t.id);
     const incDelUsers = deletedUsers.filter(t => t.ts > since).map(t => t.id);
