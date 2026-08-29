@@ -40,7 +40,8 @@ const PRINT_SEED_PW = process.env.RF_PRINT_SEED_PW === '1';
 
 /* ---------- 安全响应头（全站统一） ----------
    CSP 说明：本应用是单文件内联架构，script/style 必须允许 'unsafe-inline'；
-   但仍挡住了外部脚本注入、base 劫持、表单外传、iframe 嵌套与插件对象，属于务实基线。 */
+   事件属性已全部改为 addEventListener 委托（data-act），故不再放行 script-src-attr。
+   仍挡住外部脚本注入、base 劫持、表单外传、iframe 嵌套与插件对象，属于务实基线。 */
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -49,9 +50,6 @@ const SECURITY_HEADERS = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'",
-    // 页面仍有 113 处字面量 onclick（参数均为常量，不含用户数据）。
-    // CSP 的 'unsafe-inline' 只覆盖 <script> 块、不覆盖事件属性，不显式放行会让这些按钮全部失效。
-    "script-src-attr 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     // 保留 http/https/ws：现场可能把同步服务器指向局域网 IP 或另一个域名
@@ -749,7 +747,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   // 拉取（增量：since 之后的变更才返回，避免数据增长后每次全量下发）
-  if (p === '/sync/pull' && req.method === 'GET') {
+  if (p === '/sync/pull' && (req.method === 'GET' || req.method === 'POST')) {
     if (!authOk(req)) { sendJSON(res, 401, { ok: false, error: 'unauthorized' }, req); return; }
     let since = parseInt(url.searchParams.get('since') || '0', 10);
     if (!(since > 0)) since = 0;
