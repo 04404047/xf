@@ -318,7 +318,32 @@
   .u-gap10{gap:10px;}
   .u-mt14{margin-top:14px;}
   .u-mt6{margin-top:6px;}
-  </style>
+  
+  /* ===== 配送总厂 / 物流协同（build 2026-08-29d） ===== */
+  .edit-banner{display:flex;align-items:center;gap:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;}
+  .edit-banner .eb-txt{flex:1;min-width:0;}
+  .ship-total{margin-top:10px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ship-total b{font-size:17px;color:var(--eco);}
+  .lg-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+  .lg-kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .lg-kpi .k{font-size:12px;color:var(--muted);}
+  .lg-kpi .v{font-size:20px;font-weight:700;margin-top:4px;}
+  .lg-kpi.a .v{color:var(--primary);}
+  .lg-kpi.r .v{color:var(--danger);}
+  .lg-kpi.g .v{color:var(--eco);}
+  .eta{display:inline-flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;}
+  .eta.late{color:var(--danger);font-weight:700;}
+  .eta.today{color:var(--primary);font-weight:700;}
+  .sub-muted{font-size:12px;color:var(--muted);}
+  /* 数字列右对齐：只作用于本次改造的三张表，不动全局表格观感 */
+  #ship-tbl th.num,#ship-tbl td.num,#ship-list-tbl th.num,#ship-list-tbl td.num,
+  #lg-out-tbl th.num,#lg-out-tbl td.num,#lg-in-tbl th.num,#lg-in-tbl td.num{text-align:right;}
+  #ship-tbl td.num{color:var(--muted);}
+  @media(max-width:768px){
+    .lg-kpis{grid-template-columns:1fr;}
+    .edit-banner{flex-wrap:wrap;}
+  }
+</style>
 </head>
 <body data-page-node-id="yMx8QGJa3HesSMGJHj7wGa">
 
@@ -601,47 +626,57 @@
       </section>
 
       <!-- ===== Shipping ===== -->
-      <section class="view" id="view-shipping" data-page-node-id="jvTCBiwj6ADwdn0n1szDEy">
-        <div class="panel" data-page-node-id="Sqr6SWaaVQDBvmbQtdT6FF">
-          <div class="panel-head" data-page-node-id="XQMk3LCrrvxQa5kca8LZmf"><h3 data-i18n="s_title" data-page-node-id="aH0ItU0dXCLzJKoRihvMiV">新建发货批次 → 总厂造粒</h3></div>
-          <div class="panel-body" data-page-node-id="rWXlmFORI1uCAXSmbMqfvA">
-            <div class="row" data-page-node-id="mQYrJavnn23wPnNEHxShxl">
-              <div class="field" data-page-node-id="y8975fKSISDQV1CMf0GFW8"><label for="s-batch" data-i18n="s_batch" data-page-node-id="HCCQjjmQtQL2bDpIC9LBsd">批次号（可手动输入）</label><input id="s-batch" value="SH-119" data-page-node-id="9w1siRBMFoX9JHpMv0Liq9"/></div>
-              <div class="field" data-page-node-id="uF3TywhAFuZ4g4lW1L0Mzz"><label for="s-date" data-i18n="s_date" data-page-node-id="9WGBx4jUGAYe9P1IQOXMtX">日期</label><input id="s-date" type="date" data-page-node-id="LAdZ83s4QWWA8ZKCvtztdq"/></div>
-              <div class="field" data-page-node-id="mKp8Bpbu4YxsSih5K3N4KD"><label for="s-dest" data-i18n="s_dest" data-page-node-id="kvkjktlwdnAPvgD8HcYytk">目的地（可编辑）</label><input id="s-dest" value="总厂造粒厂 · 拉各斯" data-page-node-id="PBDdRYojpftuQVJ9GJGYbZ"/></div>
-              <div class="field" id="s-factory-wrap" style="display:none" data-page-node-id="eNLLKi2WnIXabPGE9t7chm"><label for="s-factory" data-i18n="liFactory" data-page-node-id="wSf3uz9SnWR2HhVwsGnTmf">来源工厂 / Plant</label><select id="s-factory" data-page-node-id="iNDw9BgAbmcuHLdLAeOzSK"><option value="Sagamu" data-page-node-id="1Ymo3Il9thgKwlbB0JxSEl">总厂 · Sagamu</option><option value="OPIC" data-page-node-id="3SmeHTZapNFNrqAGtxXw1v">OPIC工厂</option><option value="Ikeja" data-page-node-id="oWqQ7zdYYwtuKauhC8eBby">IKEJA工厂</option></select></div>
+      <section class="view" id="view-shipping">
+        <div class="edit-banner" id="ship-edit-banner" style="display:none">
+          <span class="eb-txt" id="ship-edit-tip"></span>
+          <button type="button" class="btn ghost sm" data-act="cancelShipEdit" data-args="[]" data-i18n="ship_cancel_edit">取消编辑</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3 data-i18n="s_title">新建发货批次 → 总厂造粒</h3><div class="right"><span class="pill" id="ship-stock-hint"></span></div></div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="field"><label for="s-batch" data-i18n="s_batch">批次号（可手动输入）</label><input id="s-batch" placeholder="SH-119"/></div>
+              <div class="field"><label for="s-date" data-i18n="s_date">日期</label><input id="s-date" type="date"/></div>
+              <div class="field"><label for="s-dest" data-i18n="s_dest">目的地（可编辑）</label><input id="s-dest" placeholder="总厂造粒厂 · 拉各斯"/></div>
+              <div class="field" id="s-factory-wrap" style="display:none"><label for="s-factory" data-i18n="liFactory">来源工厂 / Plant</label><select id="s-factory"><option value="Sagamu">总厂 · Sagamu</option><option value="OPIC">OPIC工厂</option><option value="Ikeja">IKEJA工厂</option></select></div>
             </div>
-            <div class="panel-head" style="border:none;padding:6px 0" data-page-node-id="sd2t505d4BUGD2J6YAX9IS"><h3 style="font-size:13px" data-i18n="s_pick" data-page-node-id="IwHXl4esHk3kNwqULEonrk">配送物料（只按形态，可混装多品种）</h3></div>
-            <div class="note" data-i18n="s_pick_note" data-page-node-id="FRHJcdWlcyhtRTvrAGUGlg">配送量按实际装车量填写，不与收购量挂钩；混装多品种/颜色请在备注说明，总厂确认收货后计入原料库存。</div>
-            <div class="tbl-scroll" data-page-node-id="Rwtp3NH5urjRB28tyA5B4B">
-            <table data-page-node-id="UkqLSj2CBDXoEBshGunKR2">
-              <thead data-page-node-id="405z4x3XUobDhj5HSBAeqd"><tr data-page-node-id="KRtlWcLv3r668IaJvhoC14"><th scope="col" data-i18n="h_form" data-page-node-id="L5cLPowHk3OlHVx8PwXrjP">形态</th><th scope="col" data-i18n="s_ship" data-page-node-id="yDUowZivywYvNpUA0GKBbZ">发货(kg)</th><th scope="col" data-i18n="s_note" data-page-node-id="KjHvhcfaFfjkDWAce3RQp6">备注(混装说明)</th></tr></thead>
-              <tbody id="ship-rows" data-page-node-id="XVjnH71YAjTWyO7Xk74R0W"></tbody>
+            <div class="panel-head" style="border:none;padding:6px 0"><h3 style="font-size:13px" data-i18n="s_pick">配送物料（只按形态，可混装多品种）</h3></div>
+            <div class="note" data-i18n="s_pick_note">配送量按实际装车量填写，不与收购量挂钩；混装多品种/颜色请在备注说明，总厂确认收货后计入原料库存。</div>
+            <div class="tbl-scroll">
+            <table id="ship-tbl">
+              <thead><tr><th scope="col" data-i18n="h_form">形态</th><th scope="col" class="num" data-i18n="ship_instock">本厂在库(kg)</th><th scope="col" data-i18n="s_ship">发货(kg)</th><th scope="col" data-i18n="s_note">备注(混装说明)</th></tr></thead>
+              <tbody id="ship-rows"></tbody>
             </table>
             </div>
-            <div class="row mt" data-page-node-id="PtHZBNONDhkVQhTc5eqkeZ">
-              <div class="field" data-page-node-id="AUhN7EYeK2FTE00jLGNFFa"><label for="s-carrier" data-i18n="s_carrier" data-page-node-id="xLsMIvZ0WBM9gjEPcZAyrK">承运商</label><input id="s-carrier" value="GreenLine Logistics" data-page-node-id="RA8g0YkzWtcPyc0Sfy8uA1"/></div>
-              <div class="field" data-page-node-id="ye9ONOSwdahHvxuYQvYRDT"><label for="s-vehicle" data-i18n="s_vehicle" data-page-node-id="4fhPF4lv59ipFEA2uH2vrM">车牌</label><input id="s-vehicle" value="Lagos KN-2234" data-page-node-id="WXLODADMUY4JgDI8PdCZFC"/></div>
-              <div class="field" data-page-node-id="1KirVauD8Lj5MFMIFPHp6j"><label for="s-driver" data-i18n="s_driver" data-page-node-id="8tZVxefZbxtXmfZTyTeK4i">司机</label><input id="s-driver" value="Emeka O." data-page-node-id="ybFjxRGdPDXXSpx0fOQUt2"/></div>
-              <div class="field" data-page-node-id="C7ZeUPGUSrSEkKZfLHYt91"><label for="s-eta" data-i18n="s_eta" data-page-node-id="385qdWFhPn2yYI4Go9uFlQ">预计到厂</label><input id="s-eta" type="date" data-page-node-id="Z3ENc8PLfGVPY1ivxN1hgk"/></div>
-              <div class="field" data-page-node-id="wHzST9tGjOsKNnOahSxPG9"><label for="s-cost" data-i18n="s_cost" data-page-node-id="FI0DZ9m9tuwyZn5eXn3WHe">运费(¥)</label><input id="s-cost" type="number" min="0" step="0.01" value="0" data-page-node-id="wA5uj89BwbYOX7fPbm37b6"/></div>
+            <div class="ship-total"><span data-i18n="ship_total">本单合计</span> <b id="ship-total-v">0</b> kg <span class="u-danger" id="ship-over"></span></div>
+            <div class="row mt">
+              <div class="field u-flex1"><label for="s-shipnote" data-i18n="ship_note_all">整单备注</label><input id="s-shipnote" placeholder="含 PP/PE/PVC 混合破碎料" data-i18n-ph="ship_note_ph"/></div>
+              <div class="field"><label for="s-carrier" data-i18n="s_carrier">承运商</label><input id="s-carrier" placeholder="GreenLine Logistics" data-i18n-ph="ship_carrier_ph"/></div>
+              <div class="field"><label for="s-vehicle" data-i18n="s_vehicle">车牌</label><input id="s-vehicle" placeholder="Lagos KN-2234" data-i18n-ph="ship_vehicle_ph"/></div>
+              <div class="field"><label for="s-driver" data-i18n="s_driver">司机</label><input id="s-driver" placeholder="Emeka O." data-i18n-ph="ship_driver_ph"/></div>
+              <div class="field"><label for="s-eta" data-i18n="s_eta">预计到厂</label><input id="s-eta" type="date"/></div>
+              <div class="field"><label for="s-cost" data-i18n="s_cost">运费(₦)</label><input id="s-cost" type="number" min="0" step="0.01" value="0"/></div>
             </div>
-            <div class="row mt u-end10" data-page-node-id="Z7bsFksLsJsjxBRgjFK9Qf">
-              <button type="button" class="btn ghost" data-act="printManifest" data-args="[]" data-i18n="s_print" data-page-node-id="pgPqqfEaLZnqsROKIj5T66">🖨 打印发货单</button>
-              <button type="button" class="btn ghost" id="s-save-view" data-act="saveShipping" data-args="[true]" data-i18n="s_save_view" data-page-node-id="bNtOyq7GRyg6ScBzMhUYdH">保存并查看检索</button>
-              <button type="button" class="btn eco" id="s-save-cont" data-act="saveShipping" data-args="[false]" data-i18n="s_save_cont" data-page-node-id="svCHYCxQYjC2xk1X9JxupB">保存并继续（连续录入）</button>
+            <div class="row mt u-end10">
+              <button type="button" class="btn ghost" data-act="printManifest" data-args="[]" data-i18n="s_print">🖨 打印发货单</button>
+              <button type="button" class="btn ghost" id="s-save-view" data-act="saveShipping" data-args="[true]" data-i18n="s_save_view">保存并查看检索</button>
+              <button type="button" class="btn eco" id="s-save-cont" data-act="saveShipping" data-args="[false]" data-i18n="s_save_cont">保存并继续（连续录入）</button>
             </div>
           </div>
         </div>
-        <div class="panel" data-page-node-id="zExodMfXjoLVN6vUXPdqk8">
-          <div class="panel-head" data-page-node-id="XUSF8O8BpbeA2LvF0h9UQr"><h3 data-i18n="s_recent" data-page-node-id="UePVUjdJBgIH5R55GqjrYk">近期发货记录</h3></div>
-          <div class="panel-body u-pad0" data-page-node-id="V39N3grTALSGHN1ba7Nqvi"><div class="tbl-scroll" data-page-node-id="1Tj1bs9QFBpL8MOq0xwAqZ"><table data-page-node-id="UnObf0PYBXSG0zaHaAcHoR">
-            <thead data-page-node-id="wrVTGE2CiNSMpEHmdZo0GX"><tr data-page-node-id="qGzLkv7jFNsHVcI1gTDbhB"><th scope="col" data-i18n="h_date" data-page-node-id="4EgilbcFrkgURwQQ0t9XbN">日期</th><th scope="col" data-i18n="liFactory" data-page-node-id="LbnQysZeMiRSKrRB9AG8g1">来源工厂</th><th scope="col" data-page-node-id="BI6T5F7GOmHL77edQ4ys3A">批次</th><th scope="col" data-i18n="s_dest" data-page-node-id="bzS4ala4kF1o9oxAlFVuwF">目的地</th><th scope="col" data-i18n="h_w" data-page-node-id="rJizk7XCy6QoOmlAo1q7qt">重量(kg)</th><th scope="col" data-i18n="logistics_transit" data-page-node-id="sWt1X5Oy1D34cWAEgxP3WH">状态</th><th scope="col" data-page-node-id="uUynF2LAhsmLYthfBO4YR7"></th></tr></thead>
-            <tbody id="ship-list" data-page-node-id="iGPA66JH2fddtMO2awpi4h"></tbody>
+        <div class="panel">
+          <div class="panel-head"><h3 data-i18n="s_recent">近期发货记录</h3>
+            <div class="right">
+              <select id="ship-f-status" data-act-change="renderShipList" data-args-change="[]"><option value="" data-i18n="ship_f_all">全部状态</option><option value="在途" data-i18n="logistics_transit">在途</option><option value="已入库" data-i18n="logistics_received">已入库</option></select>
+              <input id="ship-q" class="u-w140" placeholder="批次 / 目的地 / 车牌" data-i18n-ph="ship_q" data-act-input="renderShipList" data-debounce="250" data-args-input="[]"/>
+            </div>
+          </div>
+          <div class="panel-body u-pad0"><div class="tbl-scroll"><table id="ship-list-tbl">
+            <thead><tr><th scope="col" data-i18n="h_date">日期</th><th scope="col" data-i18n="liFactory">来源工厂</th><th scope="col">批次</th><th scope="col" data-i18n="s_dest">目的地</th><th scope="col" class="num" data-i18n="h_w">重量(kg)</th><th scope="col" data-i18n="s_eta">预计到厂</th><th scope="col" data-i18n="logistics_transit">状态</th><th scope="col"></th></tr></thead>
+            <tbody id="ship-list"></tbody>
           </table></div></div>
         </div>
       </section>
-
 
       <!-- ===== Produce (生产造粒) ===== -->
       <section class="view" id="view-produce" data-page-node-id="KDmLImTf29NL8TcEy9fZGN">
@@ -755,18 +790,28 @@
       </section>
 
       <!-- ===== Logistics (物流协同) ===== -->
-      <section class="view" id="view-logistics" data-page-node-id="00h4GWUqc9ZPXO9FUmtGdW">
-        <div class="panel" data-page-node-id="MbVBeQOVfNZ9DsEymWH75f">
-          <div class="panel-head" data-page-node-id="pZc7SbcB56FpjeJoDPb5Os"><h3 data-i18n="logistics_title" data-page-node-id="Z2emTIlvJHXAxt6KZ5aMKK">物流协同看板</h3><div class="right" data-page-node-id="jziPYxgGEDGyOWGZ7OO1Gk"><span class="pill" id="lg-summary" data-page-node-id="AjlHWX4akiNMxwo6LdT5Hl"></span> <button type="button" class="btn ghost sm" data-act="forceLogisticsSync" data-args="[]" data-i18n="lg_refresh">从云端刷新</button></div></div>
-          <div class="panel-body" data-page-node-id="Q1Y5loHKUmaPN33cGh86NV">
-            <div class="grid2" data-page-node-id="3quN6SCWONoVaXFAgz4wrj">
-              <div data-page-node-id="8Mx8pciptMUyfAvpf1FL5u">
-                <div class="u-sub-strong" data-i18n="logistics_out" data-page-node-id="MmzwFZaDYkZY1mVJaHxJ30">分厂配送</div>
-                <div class="tbl-scroll" data-page-node-id="R0APG8YnrHGD9rcmVnfKAw"><table data-page-node-id="G4zLAYcqp8J2TOMMyvyB9N"><thead data-page-node-id="59wLTyXr8Du1dBvjGMoiLf"><tr data-page-node-id="JZ6hhpYEuaJsc4ZAqiUuDs"><th scope="col" data-i18n="h_date" data-page-node-id="ep528KXy0Pn6MmqHd9ZNlw">日期</th><th scope="col" data-i18n="logistics_from" data-page-node-id="1qhybmlyPHJOIFuKFEbdt4">来源工厂</th><th scope="col" data-page-node-id="dNMWXFYDYbePUQqbzQ7tW7">批次</th><th scope="col" data-i18n="h_w" data-page-node-id="eq8yPwDEiSgW82wDrSKZJ5">重量(kg)</th><th scope="col" data-i18n="logistics_transit" data-page-node-id="5LVoqBmDJ4aoNQzkZl3oEu">状态</th><th scope="col" data-page-node-id="jMQMgmku9Iwv1GRe1xDJ2l"></th></tr></thead><tbody id="lg-out" data-page-node-id="CrWtCOurVoEJoUviQVNpa7"></tbody></table></div>
+      <section class="view" id="view-logistics">
+        <div class="panel">
+          <div class="panel-head"><h3 data-i18n="logistics_title">物流协同看板</h3><div class="right"><span class="pill" id="lg-scope"></span> <button type="button" class="btn ghost sm" data-act="forceLogisticsSync" data-args="[]" data-i18n="lg_refresh">从云端刷新</button></div></div>
+          <div class="panel-body">
+            <div class="lg-kpis">
+              <div class="lg-kpi a"><div class="k" data-i18n="lg_kpi_transit">在途</div><div class="v" id="lg-k-transit">0</div><div class="sub-muted" id="lg-k-transit-n"></div></div>
+              <div class="lg-kpi r"><div class="k" data-i18n="lg_kpi_pending">待入库</div><div class="v" id="lg-k-pending">0</div><div class="sub-muted" id="lg-k-pending-n"></div></div>
+              <div class="lg-kpi g"><div class="k" data-i18n="lg_kpi_month">本月已入库</div><div class="v" id="lg-k-month">0</div><div class="sub-muted" id="lg-k-month-n"></div></div>
+            </div>
+            <div class="toolbar">
+              <div class="field"><label for="lg-f-status" data-i18n="lg_f_status">状态</label><select id="lg-f-status" data-act-change="renderLogisticsBody" data-args-change="[]"><option value="" data-i18n="lg_f_all">全部</option><option value="todo" data-i18n="lg_f_todo">待处理</option><option value="在途" data-i18n="logistics_transit">在途</option><option value="待入库" data-i18n="logistics_pending">待入库</option><option value="已入库" data-i18n="logistics_received">已入库</option></select></div>
+              <div class="field"><label for="lg-f-fac" data-i18n="liFactory">来源工厂</label><select id="lg-f-fac" data-act-change="renderLogisticsBody" data-args-change="[]"><option value="" data-i18n="lg_f_all">全部</option></select></div>
+              <div class="field u-flex1"><label for="lg-q" data-i18n="lg_q">搜索</label><input id="lg-q" placeholder="批次 / 车牌 / 承运商" data-i18n-ph="lg_q_ph" data-act-input="renderLogisticsBody" data-debounce="250" data-args-input="[]"/></div>
+            </div>
+            <div class="grid2">
+              <div>
+                <div class="u-sub-strong" data-i18n="logistics_out">分厂配送</div>
+                <div class="tbl-scroll"><table id="lg-out-tbl"><thead><tr><th scope="col" data-i18n="h_date">日期</th><th scope="col" data-i18n="logistics_from">来源工厂</th><th scope="col">批次</th><th scope="col" class="num" data-i18n="h_w">重量(kg)</th><th scope="col" data-i18n="lg_carrier">承运</th><th scope="col" data-i18n="s_eta">预计到厂</th><th scope="col" data-i18n="logistics_transit">状态</th><th scope="col"></th></tr></thead><tbody id="lg-out"></tbody></table></div>
               </div>
-              <div data-page-node-id="ODvLxpeMSfNQikjNUcF6ik">
-                <div class="u-sub-strong" data-i18n="logistics_in" data-page-node-id="JAqPqpqQvdGREREJilPADV">总厂入库</div>
-                <div class="tbl-scroll" data-page-node-id="FdAbXTX67TXiUayc1rBhRY"><table data-page-node-id="4mNuvKAXGUSiogkCzfBiKd"><thead data-page-node-id="DrBD3eVPaCXuyR36i0XUCO"><tr data-page-node-id="ik7JqLSwEc2diErn3HeGGj"><th scope="col" data-i18n="h_date" data-page-node-id="4VsHWwIfhgfOytUPuVE7zR">日期</th><th scope="col" data-i18n="logistics_from" data-page-node-id="FhOXSIiFm2CgBB6HUnCH2D">来源工厂</th><th scope="col" data-page-node-id="R1wzsYZGlDpTr2PSCaTtoa">批次</th><th scope="col" data-i18n="h_w" data-page-node-id="xWNQ4it0pBYC0HZl5dIVZH">重量(kg)</th><th scope="col" data-i18n="logistics_received" data-page-node-id="oJCD9f0iSwnuPJFML7cYKG">状态</th><th scope="col" data-page-node-id="HfxC2kyqFFXWAnjBYe0shr"></th></tr></thead><tbody id="lg-in" data-page-node-id="HCE2MDJ9EC9RC3kZcqjZJk"></tbody></table></div>
+              <div>
+                <div class="u-sub-strong" data-i18n="logistics_in">总厂入库</div>
+                <div class="tbl-scroll"><table id="lg-in-tbl"><thead><tr><th scope="col" data-i18n="h_date">日期</th><th scope="col" data-i18n="logistics_from">来源工厂</th><th scope="col">批次</th><th scope="col" class="num" data-i18n="h_w">重量(kg)</th><th scope="col" data-i18n="lg_carrier">承运</th><th scope="col" data-i18n="s_eta">预计到厂</th><th scope="col" data-i18n="logistics_received">状态</th><th scope="col"></th></tr></thead><tbody id="lg-in"></tbody></table></div>
               </div>
             </div>
           </div>
@@ -1168,7 +1213,7 @@ const I18N = {
     h_date:"日期", h_mat:"材质", h_form:"形态", h_color:"颜色", h_w:"重量", h_bags:"袋数", h_price:"单价 ₦", h_amt:"金额",
     cm_title_new:"新建客户", cm_title_edit:"编辑客户", cm_name:"姓名 *", cm_phone:"电话", cm_bank:"开户行", cm_acct:"账号", cm_addr:"地址", cm_note:"备注", cm_save:"保存", cm_cancel:"取消",
     c_factory:"所属工厂", c_imprint:"重名印记", c_imprint_tip:"该客户名称与所列工厂已有客户重复，请跨厂核对",
-    fin_title:"财务记录", fin_income:"进项", fin_expense:"出项", fin_net:"净额", fin_daily:"每日收支统计", fin_date:"日期", fin_type:"类型", fin_cat:"类别", fin_amount:"金额(¥)", fin_note:"备注", fin_by:"经手人", fin_add:"＋ 新增财务记录", fin_link:"🔗 关联业务收支", fin_factory:"所属工厂", fin_auto:"自动关联", s_cost:"运费(¥)",
+    fin_title:"财务记录", fin_income:"进项", fin_expense:"出项", fin_net:"净额", fin_daily:"每日收支统计", fin_date:"日期", fin_type:"类型", fin_cat:"类别", fin_amount:"金额(₦)", fin_note:"备注", fin_by:"经手人", fin_add:"＋ 新增财务记录", fin_link:"🔗 关联业务收支", fin_factory:"所属工厂", fin_auto:"自动关联", s_cost:"运费(₦)",
     g_core:"核心业务", g_data:"数据", g_sys:"系统",
     d_note_trend:"说明：蓝线为每日回收量、绿线为对应出库量（总厂为入库、分厂为配送，kg）。回收线持续高于出库线说明原料积压，应加快造粒出货；反之需补充货源。",
     d_note_inv:"说明：按材质统计当前在库原料重量（kg，含大料与破碎料），反映各厂库存结构；PVC 占比偏高时，需重点关注对应供货客户的稳定性。",
@@ -1197,7 +1242,7 @@ const I18N = {
     crush_title:"新建破碎清洗单", crush_in:"投入大料(kg)", crush_out:"产出破碎料(kg)", crush_loss:"破碎损耗", crush_loss_val:"约 8%", crush_save:"保存破碎单", crush_list:"破碎清洗记录", crush_inv:"本厂原料库存", crush_confirm:"确认入库",
     produce_title:"新建造粒生产单", produce_in:"投入破碎料(kg)", produce_out:"产出粒子(kg)", produce_yield:"造粒得率", produce_yield_val:"约 95%", produce_save:"保存生产单", produce_list:"造粒生产记录", produce_pellet:"在产粒子库存", produce_rate:"得率", pr_shift:"班次", pr_machine:"机台", produce_qty:"产出数量(kg)",
     sell_title:"新建成品出售单", sell_mat:"材质", sell_w:"数量(kg)", sell_price:"单价 ¥/kg", sell_amt:"销售额", sell_avail:"可用库存", sell_inv:"成品库存（材质·颜色）", sell_cust:"购货客户 *", sell_save:"保存出售单", sell_list:"成品出售记录", sell_rev:"累计销售额",
-    logistics_title:"物流协同看板", logistics_out:"分厂配送", logistics_in:"总厂入库", logistics_confirm:"确认入库", logistics_pending:"待入库", logistics_transit:"在途", logistics_received:"已入库", logistics_from:"来源工厂", logistics_summary:"物流概览", logistics_empty:"暂无物流记录", lg_refresh:"从云端刷新", lg_syncing:"正在从云端刷新…", lg_noperm:"（本账号无入库确认权限，仅总厂可确认）", lg_empty_in:"暂无入库记录：请确认分厂已在「配送总厂」发货，并点击右上角「从云端刷新」",
+    logistics_title:"物流协同看板", logistics_out:"分厂配送", logistics_in:"总厂入库", logistics_confirm:"确认入库", logistics_pending:"待入库", logistics_transit:"在途", logistics_received:"已入库", logistics_from:"来源工厂", logistics_summary:"物流概览", logistics_empty:"暂无物流记录", lg_refresh:"从云端刷新", lg_syncing:"正在从云端刷新…", lg_noperm:"（本账号无入库确认权限，仅总厂可确认）", lg_empty_in:"暂无入库记录：请确认分厂已在「配送总厂」发货，并点击右上角「从云端刷新」", lg_kpi_transit:"在途", lg_kpi_pending:"待入库", lg_kpi_month:"本月已入库", lg_over:"逾期 {n} 天", lg_eta_today:"今日到厂", lg_receive:"确认收货", lg_empty_out:"暂无配送记录：分厂在「配送总厂」发货后将出现在这里", lg_carrier:"承运", lg_q:"搜索", lg_q_ph:"批次 / 车牌 / 承运商", lg_f_status:"状态", lg_f_todo:"待处理", lg_f_all:"全部", lg_scope_all:"可见范围：全部工厂", lg_scope_one:"可见范围：本厂", lg_n:"共 {n} 条", ship_edit_banner:"正在编辑发货单 {b} —— 保存将覆盖原单", ship_cancel_edit:"取消编辑", ship_instock:"本厂在库(kg)", ship_total:"本单合计", ship_over:"⚠ 超出在库 {n} kg，请核对装车量", ship_q:"批次 / 目的地 / 车牌", ship_f_all:"全部状态", ship_note_all:"整单备注", ship_note_ph:"含 PP/PE/PVC 混合破碎料", ship_carrier_ph:"GreenLine Logistics", ship_vehicle_ph:"Lagos KN-2234", ship_driver_ph:"Emeka O.", ship_cleared:"已退出编辑，表单已重置为新建",
     inv_note:"库存管理：原料（大料 / 破碎料）与成品（粒子·粉，按材质·颜色）由业务记录实时回放得出；下方「种类与颜色」可自由编辑添加，新增造粒产出会自动更新对应成品库存。", inv_raw:"原料库存（大料 / 破碎料）", inv_pellet:"成品库存（材质 · 颜色）", inv_catalog:"种类与颜色配置（全局统一）", inv_add_mat:"＋ 新增种类", inv_catalog_note:"说明：删除颜色 / 种类仅影响可选列表，不影响历史记录；造粒产出与出库销售均从此目录取值，确保种类颜色全局统一。", inv_del:"删除", inv_add_color:"新增颜色", inv_del_mat:"删除种类", inv_edit_hint_t:"老板模式：", inv_edit_hint:"原料与成品库存均可在右侧数值框直接修改（按工厂独立校正），系统按「业务回放值 + 校正偏移」展示。",
     ty_Receive:"回收", ty_Ship:"配送", ty_Inbound:"入库", ty_Crush:"破碎", ty_Produce:"造粒", ty_Sale:"出售",
     rep_note2:"差额 = 回收量 − 配送量 − 造粒原料消耗；粒子库存 = 造粒产出 − 成品出售。",
@@ -1251,7 +1296,7 @@ const I18N = {
     h_date:"Date", h_mat:"Material", h_form:"Form", h_color:"Color", h_w:"Weight", h_bags:"Bags", h_price:"Unit ₦", h_amt:"Amount",
     cm_title_new:"New Customer", cm_title_edit:"Edit Customer", cm_name:"Name *", cm_phone:"Phone", cm_bank:"Bank", cm_acct:"Account", cm_addr:"Address", cm_note:"Remark", cm_save:"Save", cm_cancel:"Cancel",
     c_factory:"Plant", c_imprint:"Dup imprint", c_imprint_tip:"This customer name duplicates one already registered in the listed plant(s); verify across plants",
-    fin_title:"Finance Records", fin_income:"Income", fin_expense:"Expense", fin_net:"Net", fin_daily:"Daily Income/Expense", fin_date:"Date", fin_type:"Type", fin_cat:"Category", fin_amount:"Amount(¥)", fin_note:"Remark", fin_by:"By", fin_add:"＋ New Finance Entry", fin_link:"🔗 Link Business", fin_factory:"Plant", fin_auto:"Auto", s_cost:"Freight(¥)",
+    fin_title:"Finance Records", fin_income:"Income", fin_expense:"Expense", fin_net:"Net", fin_daily:"Daily Income/Expense", fin_date:"Date", fin_type:"Type", fin_cat:"Category", fin_amount:"Amount(₦)", fin_note:"Remark", fin_by:"By", fin_add:"＋ New Finance Entry", fin_link:"🔗 Link Business", fin_factory:"Plant", fin_auto:"Auto", s_cost:"Freight(₦)",
     g_core:"CORE", g_data:"DATA", g_sys:"SYSTEM",
     d_note_trend:"Note: blue = daily receiving, green = outbound (Inbound at HQ / Ship at branches, kg). If receiving stays above outbound, raw stock accumulates — push pelletizing; otherwise secure more supply.",
     d_note_inv:"Note: cumulative receive weight by material (kg), in-stock reference. High PVC share means watching those suppliers' stability.",
@@ -1279,7 +1324,7 @@ const I18N = {
     crush_title:"New crushing batch", crush_in:"Bulk in (kg)", crush_out:"Crushed out (kg)", crush_loss:"Crush loss", crush_loss_val:"~8%", crush_save:"Save batch", crush_list:"Crushing records", crush_inv:"Raw stock", crush_confirm:"Confirm inbound",
     produce_title:"New pelletizing batch", produce_in:"Crushed in (kg)", produce_out:"Pellets out (kg)", produce_yield:"Yield", produce_yield_val:"~95%", produce_save:"Save batch", produce_list:"Pelletizing records", produce_pellet:"Pellet stock", produce_rate:"Yield", pr_shift:"Shift", pr_machine:"Machine", produce_qty:"Output (kg)",
     sell_title:"New sales order", sell_mat:"Material", sell_w:"Qty (kg)", sell_price:"Unit ¥/kg", sell_amt:"Revenue", sell_avail:"Avail. stock", sell_inv:"Finished stock (mat·color)", sell_cust:"Buyer *", sell_save:"Save order", sell_list:"Sales records", sell_rev:"Total revenue",
-    logistics_title:"Logistics board", logistics_out:"Branch shipments", logistics_in:"HQ inbound", logistics_confirm:"Confirm receipt", logistics_pending:"Pending", logistics_transit:"In transit", logistics_received:"Received", logistics_from:"From plant", logistics_summary:"Overview", logistics_empty:"No logistics records", lg_refresh:"Refresh from cloud", lg_syncing:"Refreshing from cloud…", lg_noperm:"(no confirm permission; HQ only)", lg_empty_in:"No inbound yet: ensure the branch shipped, then tap the refresh button above",
+    logistics_title:"Logistics board", logistics_out:"Branch shipments", logistics_in:"HQ inbound", logistics_confirm:"Confirm receipt", logistics_pending:"Pending", logistics_transit:"In transit", logistics_received:"Received", logistics_from:"From plant", logistics_summary:"Overview", logistics_empty:"No logistics records", lg_refresh:"Refresh from cloud", lg_syncing:"Refreshing from cloud…", lg_noperm:"(no confirm permission; HQ only)", lg_empty_in:"No inbound yet: ensure the branch shipped, then tap the refresh button above", lg_kpi_transit:"In transit", lg_kpi_pending:"Pending", lg_kpi_month:"Received this month", lg_over:"{n}d late", lg_eta_today:"Due today", lg_receive:"Confirm receipt", lg_empty_out:"No shipments yet — branch shipments appear here", lg_carrier:"Carrier", lg_q:"Search", lg_q_ph:"Batch / plate / carrier", lg_f_status:"Status", lg_f_todo:"Open", lg_f_all:"All", lg_scope_all:"Scope: all plants", lg_scope_one:"Scope: this plant", lg_n:"{n} items", ship_edit_banner:"Editing {b} — saving overwrites it", ship_cancel_edit:"Cancel edit", ship_instock:"In stock(kg)", ship_total:"Shipment total", ship_over:"⚠ {n} kg over stock — verify loading", ship_q:"Batch / dest / plate", ship_f_all:"All statuses", ship_note_all:"Note", ship_note_ph:"e.g. PP/PE/PVC mixed", ship_carrier_ph:"GreenLine Logistics", ship_vehicle_ph:"Lagos KN-2234", ship_driver_ph:"Emeka O.", ship_cleared:"Exited edit — form reset to new",
     inv_note:"Inventory: raw (bulk/crushed) and finished goods (pellets/powder by material·color) are replayed from business records. Edit materials/colors below; new pelletizing output auto-updates finished stock.", inv_raw:"Raw stock (bulk / crushed)", inv_pellet:"Finished stock (material · color)", inv_catalog:"Materials & colors (global)", inv_add_mat:"＋ Add material", inv_catalog_note:"Note: deleting a color/material only affects the picker, not history. Pelletizing output and sales both read from this catalog for unified naming.", inv_del:"Delete", inv_add_color:"Add color", inv_del_mat:"Delete material", inv_edit_hint_t:"Owner mode: ", inv_edit_hint:"Raw and finished stock can be edited directly in the right-side box (per-factory adjustment); the system shows 'replay value + adjustment'.",
     ty_Receive:"Receive", ty_Ship:"Ship", ty_Inbound:"Inbound", ty_Crush:"Crush", ty_Produce:"Produce", ty_Sale:"Sale",
     rep_note2:"Difference = received − shipped − pelletizing input; pellet stock = produced − sold.",
@@ -1964,6 +2009,7 @@ function loadState(){
 function setLang(l){
   lang=l;settings.lang=l;document.documentElement.lang=(l==='zh'?'zh-CN':'en');
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(I18N[lang][k]!==undefined)el.textContent=I18N[lang][k];});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');if(I18N[lang][k]!==undefined)el.placeholder=I18N[lang][k];});
   document.querySelectorAll('#lang-seg button,#login-seg button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
   const lo=document.getElementById('lo-lang');if(lo)lo.value=lang;
   const ph={ 'rc-name':t('rc_name_ph'), 'rc-bank':t('rc_bank_ph') };
@@ -2790,23 +2836,30 @@ function saveShipping(view){
   if(tot===0){toast(lang==='zh'?'请填写发货重量':'Enter ship weight');return;}
   const noteAll=(shipNote?shipNote+' · ':'')+'batch '+batch;
   if(editingShipId){
-    const ship=records.find(r=>r.id===editingShipId&&r.ty==='Ship');if(!ship)return;
-    let inb=records.find(r=>r.ty==='Inbound'&&r.linkId===editingShipId);
+    const ship=records.find(r=>String(r.id)===String(editingShipId)&&r.ty==='Ship');if(!ship)return;
+    /* 类型无关匹配 + 去重：跨设备同步来的 id 一边数字一边字符串时，严格比较会漏判，
+       于是每次编辑保存都新建一条入库——这是「同步一次多一条」的最大来源。 */
+    let list=records.filter(function(r){return r.ty==='Inbound'&&String(r.linkId)===String(ship.id)&&!tombMeta[r.id];});
+    let inb=list[0]||null;
+    if(list.length>1){ list.slice(1).forEach(function(r){ records=records.filter(x=>String(x.id)!==String(r.id)); addTomb(r.id, currentRole); }); }
     const fromFac=ship.factory;
     ship.dt=date;ship.dest=dest;ship.items=items;ship.tw=tot;ship.ta=0;ship.factory=fromFac;ship.fromFac=fromFac;ship.note=noteAll;ship.custName='→ 总厂';ship.ts=Date.now();
     const inbNote='from '+fromFac+' · '+(shipNote?shipNote+' · ':'')+'batch '+ship.batch;
     if(inb){inb.dt=date;inb.dest=dest;inb.items=items.map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note}));inb.tw=tot;inb.fromFac=fromFac;inb.note=inbNote;inb.ts=Date.now();}
-    else { /* 分厂编辑发货单时若关联入库单缺失，则补全新建（待入库），确保总厂即时可确认入库 */
+    else if(!tombMeta['inbound:'+ship.id]){ /* 分厂编辑发货单时若关联入库单缺失，则补全新建（待入库），确保总厂即时可确认入库。
+        已被显式删除的入库（伪墓碑）不在这里偷偷重建，与 reconcileAll 语义保持一致。 */
       inb=pushRec({id:genGid(),dt:date,ty:'Inbound',custId:0,custName:'来料入库',items:items.map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note})),tw:tot,ta:0,ticket:'',op:opName(),batch:ship.batch,dest,note:inbNote,factory:'Sagamu',status:'待入库',linkId:ship.id,fromFac});
     }
     ship.carrier=carrier;ship.vehicle=vehicle;ship.driver=driver;ship.eta=eta;ship.shipCost=cost;
     auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_ship',target:ship.batch,detail:(lang==='zh'?'修改 · ':'edited · ')+tot.toLocaleString()+' kg · '+FACTORIES[fromFac].name});
-    editingShipId=null;
+    exitShipEdit();
     const b1=document.getElementById('s-save-view'),b2=document.getElementById('s-save-cont');
     if(b1)b1.textContent=t('s_save_view');if(b2)b2.textContent=t('s_save_cont');
     settings.pending=(settings.pending||0)+1;
     saveState();refreshAfterSave();
-    document.querySelectorAll('#ship-rows .ship-w').forEach(i=>i.value=0);
+    clearShipQty();
+    const snEl2=document.getElementById('s-shipnote');if(snEl2)snEl2.value='';
+    const nbEl2=document.getElementById('s-batch');if(nbEl2)nbEl2.value=nextBatch();
     toast(lang==='zh'?'发货单已修改':'Shipment updated');
     return;
   }
@@ -2819,30 +2872,107 @@ function saveShipping(view){
   saveState();refreshAfterSave();
   const savedBatch=batch;
   const nextB=incTicket(savedBatch);
-  document.querySelectorAll('#ship-rows .ship-w').forEach(i=>i.value=0);
+  clearShipQty();
+  const snEl3=document.getElementById('s-shipnote');if(snEl3)snEl3.value='';
   document.getElementById('s-batch').value=nextB;
   if(view){ presetSearchAndGo('Ship',savedBatch); }
   else { document.getElementById('s-batch').focus(); toast(t('s_next').replace('{b}',savedBatch).replace('{n}',nextB)); }
 }
 function printManifest(){toast(lang==='zh'?'已发送发货单至打印机':'Manifest sent to printer');}
+/* 编辑态退出：清掉 editingShipId、隐藏编辑横幅、按钮文案回到「新建」 */
+function exitShipEdit(){
+  editingShipId=null;
+  const bn=document.getElementById('ship-edit-banner');if(bn)bn.style.display='none';
+  const b1=document.getElementById('s-save-view'),b2=document.getElementById('s-save-cont');
+  if(b1)b1.textContent=t('s_save_view');if(b2)b2.textContent=t('s_save_cont');
+}
+/* 取消编辑：退出编辑态并把表单复位成新建，避免「以为在新建、其实覆盖了老单」 */
+function cancelShipEdit(){
+  exitShipEdit();
+  clearShipQty();
+  const sn=document.getElementById('s-shipnote');if(sn)sn.value='';
+  const sb=document.getElementById('s-batch');if(sb)sb.value=nextBatch();
+  toast(t('ship_cleared'));
+}
+/* 清空装车量与行内混装备注（旧版只清重量，备注会串到下一单） */
+function clearShipQty(){
+  document.querySelectorAll('#ship-rows .ship-w').forEach(function(i){i.value=0;});
+  document.querySelectorAll('#ship-rows .ship-note').forEach(function(i){i.value='';});
+  updateShipTotal();
+}
+/* 本厂破碎料在库（按形态聚合原料库存，含老板校正值） */
+function fragStock(fac){
+  try{
+    const inv=computeInventory(fac);const fr=flattenRaw(inv);const del=invDeleted.raw||{};
+    return Object.keys(fr).reduce(function(s,k){
+      if(del[k])return s;
+      if(String(k).split('|')[1]!=='破碎料')return s;
+      const ov=invRawEdit[k];const base=Math.round(fr[k]||0);
+      return s+(ov?ov.w:(base+(invAdjustRaw[k]||0)));
+    },0);
+  }catch(e){return 0;}
+}
+/* 编辑态下本单已发货量已从库存扣减，回加后再比对，避免误报超发 */
+function shipStockRef(){
+  let s=fragStock(effectiveFactory());
+  if(editingShipId){const cur=records.find(function(r){return r.id===editingShipId&&r.ty==='Ship';});if(cur)s+=Math.round(cur.tw||0);}
+  return Math.max(0,Math.round(s));
+}
+/* 本单合计 + 超发提示：填完即可见，不必等到保存后才发现数字不对 */
+function updateShipTotal(){
+  let tot=0;
+  document.querySelectorAll('#ship-rows .ship-w').forEach(function(i){tot+=(+i.value||0);});
+  const v=document.getElementById('ship-total-v');if(v)v.textContent=Math.round(tot).toLocaleString();
+  const ref=shipStockRef();
+  const hint=document.getElementById('ship-stock-hint');
+  if(hint)hint.textContent=(lang==='zh'?'本厂破碎料在库 ':'Fragment stock ')+ref.toLocaleString()+' kg';
+  const ov=document.getElementById('ship-over');
+  if(ov)ov.textContent=(tot>ref&&ref>0)?t('ship_over').replace('{n}',Math.round(tot-ref).toLocaleString()):'';
+}
+/* 预计到厂：逾期/今日到厂高亮。已入库不再计逾期，避免历史单长期飘红 */
+function lateDays(eta,status){
+  if(!eta)return 0;
+  if(status==='已入库'||status==='已收货')return 0;
+  const a=new Date(today()+'T00:00:00'), b=new Date(eta+'T00:00:00');
+  if(isNaN(a.getTime())||isNaN(b.getTime()))return 0;
+  const d=Math.floor((a-b)/86400000);
+  return d>0?d:0;
+}
+function etaCell(eta,status){
+  if(!eta)return '<td class="muted">—</td>';
+  const d=lateDays(eta,status);
+  if(d>0)return '<td><span class="eta late">'+esc(eta)+' · '+esc(t('lg_over').replace('{n}',d))+'</span></td>';
+  if(eta===today())return '<td><span class="eta today">'+esc(eta)+' · '+esc(t('lg_eta_today'))+'</span></td>';
+  return '<td><span class="eta">'+esc(eta)+'</span></td>';
+}
 /* 配送视图：分厂向总厂配送 —— 物料统一为破碎料，配送量由人工按实际装车量填写，不与收购量挂钩 */
 function renderShipRows(){
   const el=document.getElementById('ship-rows');if(!el)return;
   /* 新建发货单时默认日期为当天，编辑态由 editShip 回显，不覆盖 */
   if(!editingShipId){const sd=document.getElementById('s-date');if(sd&&!sd.value)sd.value=today();}
-  /* 配送总厂逻辑：不与分厂收购量挂钩，只按形态(破碎料)录入装车量；可混合多品种颜色，用备注说明 */
   const forms=['破碎料'];
-  el.innerHTML=forms.map(f=>{
-    return `<tr data-f="${f}"><td class="u-vmid">${t('opt_frag')}</td><td class="u-vmid"><input class="ship-w" type="number" value="0" min="0" style="width:92px" placeholder="0"/> <span class="unit">kg</span></td><td class="u-vmid"><textarea class="ship-note" style="width:260px;height:40px;resize:vertical;font:inherit" placeholder="${lang==='zh'?'混装说明（可换行）':'mixed note (multi-line)'}"></textarea></td></tr>`;
+  const ref=shipStockRef();
+  el.innerHTML=forms.map(function(f){
+    return '<tr data-f="'+f+'"><td class="u-vmid">'+t('opt_frag')+'</td><td class="u-vmid num muted">'+ref.toLocaleString()+'</td><td class="u-vmid"><input class="ship-w" type="number" value="0" min="0" step="1" style="width:110px" placeholder="0" '+actOn('input','updateShipTotal',[])+'/> <span class="unit">kg</span></td><td class="u-vmid"><input class="ship-note" style="width:100%;min-width:160px" placeholder="'+esc(lang==='zh'?'混装说明（多品种/颜色）':'mixed note')+'"/></td></tr>';
   }).join('');
+  updateShipTotal();
 }
-
+function shipFilterVal(id){const e=document.getElementById(id);return e?e.value:'';}
 function renderShipList(){
   const el=document.getElementById('ship-list');if(!el)return;
   const fac=effectiveFactory();
-  const list=records.filter(r=>r.ty==='Ship'&&(isTopAllView()||r.factory===fac||(isTopRole()&&currentFactory==='Sagamu')));
-  if(!list.length){el.innerHTML=`<tr><td colspan="7" class="muted">${lang==='zh'?'暂无发货记录':'No shipments'}</td></tr>`;return;}
-  el.innerHTML=list.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory)}</td><td>${esc(r.batch)}</td><td>${esc(r.dest||'—')}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" ${act('editShip',r.id)}>${t('edit')}</span> · <span class="link u-danger" ${act('deleteShip',r.id)}>${t('delete')}</span></td></tr>`).join('');
+  const st=shipFilterVal('ship-f-status');
+  const q=(shipFilterVal('ship-q')||'').trim().toLowerCase();
+  let list=records.filter(function(r){return r.ty==='Ship'&&(isTopAllView()||r.factory===fac||(isTopRole()&&currentFactory==='Sagamu'));});
+  if(st)list=list.filter(function(r){return (r.status||'在途')===st;});
+  if(q)list=list.filter(function(r){
+    return [r.batch,r.dest,r.vehicle,r.carrier,r.driver].some(function(v){return v&&String(v).toLowerCase().indexOf(q)>=0;});
+  });
+  if(!list.length){el.innerHTML='<tr><td colspan="8" class="muted">'+(lang==='zh'?'暂无发货记录':'No shipments')+'</td></tr>';return;}
+  el.innerHTML=list.map(function(r){
+    const s=r.status||'在途';
+    return '<tr><td>'+esc(r.dt)+'</td><td>'+(FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory))+'</td><td>'+esc(r.batch)+'</td><td>'+esc(r.dest||'—')+'</td><td class="num">'+Math.round(r.tw||0).toLocaleString()+'</td>'+etaCell(r.eta,s)+'<td>'+statusTag(s)+'</td><td><span class="link" '+act('editShip',r.id)+'>'+t('edit')+'</span> · <span class="link u-danger" '+act('deleteShip',r.id)+'>'+t('delete')+'</span></td></tr>';
+  }).join('');
 }
 function editShip(id){
   const r=records.find(x=>x.id===id&&x.ty==='Ship');if(!r)return;
@@ -2855,28 +2985,38 @@ function editShip(id){
   document.getElementById('s-driver').value=r.driver||'';
   document.getElementById('s-eta').value=r.eta||'';
   document.getElementById('s-cost').value=r.shipCost||0;
+  /* 整单备注：保存时被拼进 note 前缀，编辑时必须回显，否则一改单就吞掉原备注 */
+  const snEl=document.getElementById('s-shipnote');
+  if(snEl){const _n=String(r.note||''),_i=_n.indexOf(' · batch ');snEl.value=(_i>=0?_n.slice(0,_i):'');}
   const b1=document.getElementById('s-save-view'),b2=document.getElementById('s-save-cont');
   if(b1)b1.textContent=t('s_save_edit');if(b2)b2.textContent=t('s_save_edit');
-  go('shipping'); /* 触发 renderShipRows 重建库存行 */
+  const bn=document.getElementById('ship-edit-banner'),tip=document.getElementById('ship-edit-tip');
+  if(tip)tip.textContent=t('ship_edit_banner').replace('{b}',r.batch||'');
+  if(bn)bn.style.display='';
+  go('shipping'); /* 触发 renderShipRows 重建表单行 */
   (r.items||[]).forEach(it=>{
-    const tr=document.querySelector(`#ship-rows tr[data-f="${it.f}"]`);
+    const tr=document.querySelector('#ship-rows tr[data-f="'+it.f+'"]');
     if(tr){const inp=tr.querySelector('.ship-w');if(inp)inp.value=it.w; const nn=tr.querySelector('.ship-note'); if(nn&&it.note)nn.value=it.note;}
   });
+  updateShipTotal(); /* 行回填发生在 go() 之后，合计必须最后再算一次 */
   toast(lang==='zh'?'已载入待修改发货单':'Loaded for editing');
 }
 function deleteShip(id){
   const r=records.find(x=>x.id===id&&x.ty==='Ship');if(!r)return;
   if(!can('ship')){toast(lang==='zh'?'无删除权限':'No delete permission');return;}
   if(!confirm(lang==='zh'?`确认删除发货单 ${r.batch}？关联入库记录将一并删除，分支库存回退。`:`Delete ${r.batch}? Linked inbound removed, branch stock reverts.`))return;
-  const linb=records.find(x=>x.ty==='Inbound'&&x.linkId===id);
-  records=records.filter(x=>!(x.id===id||(x.ty==='Inbound'&&x.linkId===id)));
+  /* 类型无关匹配：跨设备同步来的 id 一边是数字（seed 老数据）一边是字符串（新建 gid）时，
+     === 比较会漏掉孪生入库，删发货单只清掉一条、另一条留下来继续被 reconcileAll 认领。 */
+  const linbs=records.filter(x=>x.ty==='Inbound'&&String(x.linkId)===String(id));
+  records=records.filter(x=>!(String(x.id)===String(id)||(x.ty==='Inbound'&&String(x.linkId)===String(id))));
   addTomb(id, currentRole);
-  if(linb)addTomb(linb.id, currentRole);
+  linbs.forEach(function(x){addTomb(x.id, currentRole);});
   /* 发货单本身没了，linkId 级伪墓碑（'inbound:<shipId>'）已无意义，回收以免 tombMeta 无限增长 */
   delete tombMeta['inbound:'+id];
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:r.batch,detail:lang==='zh'?'删除发货单':'deleted ship'});
   saveState();refreshAfterSave();
+  exitShipEdit();
   toast(lang==='zh'?'已删除发货单':'Shipment deleted');
 }
 function editInbound(id){
@@ -2888,7 +3028,16 @@ function deleteInbound(id){
   const inb=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');if(!inb)return;
   if(!can('inbound')){toast(lang==='zh'?'无删除权限':'No delete permission');return;}
   if(!confirm(lang==='zh'?`确认删除入库记录 ${inb.batch}？关联发货单状态将回退为在途，总厂原料库存回退。`:`Delete inbound ${inb.batch}? Linked shipment reverts to transit, HQ stock reverts.`))return;
+  /* 同一发货单下历史遗留的重复入库（id 类型错配时补建出来的孪生记录）一并清除：
+     只删一条的话，剩下那条会立刻被 reconcileAll 认领回来，表现为「删了又长出来」。 */
+  const twins=(inb.linkId!=null)
+    ? records.filter(x=>x.ty==='Inbound'&&String(x.linkId)===String(inb.linkId)&&String(x.id)!==String(id))
+    : [];
   records=records.filter(x=>String(x.id)!==String(id));
+  twins.forEach(function(x){
+    records=records.filter(y=>String(y.id)!==String(x.id));
+    addTomb(x.id, currentRole);
+  });
   addTomb(id, currentRole);
   /* 标记该发货单的入库已删除：reconcileAll 据此跳过、不再自动重建（修复「删除后复活」） */
   if(inb.linkId!=null)addTomb('inbound:'+inb.linkId, currentRole);
@@ -3381,17 +3530,81 @@ function forceLogisticsSync(){
     toast(ok?(lang==='zh'?'已刷新':'Refreshed'):(lang==='zh'?'刷新失败，检查服务器连接':'Refresh failed — check server'));
   }).catch(function(){ window.__skipLogiSync=0; toast(lang==='zh'?'刷新失败':'Refresh failed'); });
 }
+function lgFilterVal(id){const e=document.getElementById(id);return e?e.value:'';}
+function lgPopulateFacFilter(){
+  const sel=document.getElementById('lg-f-fac');if(!sel||sel.options.length>1)return;
+  Object.keys(FACTORIES).forEach(function(k){
+    const o=document.createElement('option');o.value=k;o.textContent=FACTORIES[k].name;sel.appendChild(o);
+  });
+}
+function lgMatchQ(r,q){
+  if(!q)return true;
+  return [r.batch,r.vehicle,r.carrier,r.driver,r.dest].some(function(v){return v&&String(v).toLowerCase().indexOf(q)>=0;});
+}
+function lgEtaOf(r){
+  if(r.eta)return r.eta;
+  if(r.linkId){const s=records.find(function(x){return String(x.id)===String(r.linkId)&&x.ty==='Ship';});if(s)return s.eta;}
+  return '';
+}
+function lgCarrierOf(r){
+  const s=(r.ty==='Ship')?r:records.find(function(x){return String(x.id)===String(r.linkId)&&x.ty==='Ship';});
+  if(!s)return '—';
+  return [s.carrier,s.vehicle].filter(Boolean).join(' · ')||'—';
+}
+function _lgCell(r,canConfirm,isIn){
+  const st=isIn?(r.status||'待入库'):(r.status||'在途');
+  const fac=FACTORIES[r.fromFac||r.factory]?FACTORIES[r.fromFac||r.factory].name:esc(r.fromFac||r.factory||'—');
+  const eta=lgEtaOf(r);
+  const actCell=(st==='待入库'||st==='在途')
+    ? ((canConfirm?'<button class="btn ghost sm" '+act('confirmInbound',r.id)+'>'+(isIn?t('logistics_confirm'):t('lg_receive'))+'</button> '
+        :(isIn?'<span class="muted small">'+t('lg_noperm')+'</span>':'')))
+    : '';
+  const editAct=isIn?'editInbound':'editShip';
+  const delAct=isIn?'deleteInbound':'deleteShip';
+  return '<tr><td>'+esc(r.dt)+'</td><td>'+fac+'</td><td>'+esc(r.batch)+'</td><td class="num">'+Math.round(r.tw||0).toLocaleString()+'</td><td class="sub-muted">'+esc(lgCarrierOf(r))+'</td>'+etaCell(eta,st)+'<td>'+statusTag(st)+'</td><td>'+actCell+'<span class="link" '+act(editAct,r.id)+'>'+t('edit')+'</span> · <span class="link u-danger" '+act(delAct,r.id)+'>'+t('delete')+'</span></td></tr>';
+}
 function renderLogisticsBody(){
   const all=logisticsAllScope();
   const canConfirm=can('inbound'); /* 只有具备入库权限的角色（总厂/老板）才显示确认按钮：
                                       此前分厂账号也会看到按钮，点了却弹「无权限」，属于典型的假入口 */
-  const ships=records.filter(r=>r.ty==='Ship'&&(all||r.factory===currentFactory));
-  const inbs=records.filter(r=>r.ty==='Inbound'&&(all||r.fromFac===currentFactory));
-  setHTML('lg-out', ships.length?ships.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.factory]?FACTORIES[r.factory].name:esc(r.factory)}</td><td>${esc(r.batch)}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'在途')}</td><td><span class="link" ${act('editShip',r.id)}>${t('edit')}</span> · <span class="link u-danger" ${act('deleteShip',r.id)}>${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无配送记录':'No shipments'}</td></tr>`);
-  setHTML('lg-in', inbs.length?inbs.map(r=>`<tr><td>${esc(r.dt)}</td><td>${FACTORIES[r.fromFac]?FACTORIES[r.fromFac].name:esc(r.fromFac)}</td><td>${esc(r.batch)}</td><td class="num">${Math.round(r.tw).toLocaleString()}</td><td>${statusTag(r.status||'待入库')}</td><td>${(r.status==='待入库'&&canConfirm)?'<button class="btn ghost sm" '+act('confirmInbound',r.id)+'>'+t('logistics_confirm')+'</button> ':((r.status==='待入库'&&!canConfirm)?'<span class="muted small">'+t('lg_noperm')+'</span>':'')}<span class="link" ${act('editInbound',r.id)}>${t('edit')}</span> · <span class="link u-danger" ${act('deleteInbound',r.id)}>${t('delete')}</span></td></tr>`).join(''):`<tr><td colspan="6" class="muted">${t('lg_empty_in')}</td></tr>`);
-  const pend=inbs.filter(r=>r.status==='待入库').reduce((s,r)=>s+r.tw,0);
-  const transit=ships.filter(r=>r.status==='在途').reduce((s,r)=>s+r.tw,0);
-  setHTML('lg-summary', (lang==='zh'?'在途 ':'In transit ')+transit.toLocaleString()+' kg · '+(lang==='zh'?'待入库 ':'Pending ')+pend.toLocaleString()+' kg');
+  lgPopulateFacFilter();
+  let ships=records.filter(function(r){return r.ty==='Ship'&&(all||r.factory===currentFactory);});
+  let inbs=records.filter(function(r){return r.ty==='Inbound'&&(all||r.fromFac===currentFactory);});
+  const byDtDesc=function(a,b){return String(b.dt||'').localeCompare(String(a.dt||''));};
+  /* KPI 走未筛选全集，避免筛选后看板数字跟着变、失去总量意义 */
+  const ym=today().slice(0,7);
+  const transit=ships.filter(function(r){return (r.status||'在途')!=='已入库';});
+  const pending=inbs.filter(function(r){return (r.status||'待入库')==='待入库';});
+  const doneM=inbs.filter(function(r){return (r.status||'')==='已入库'&&String(r.dt||'').slice(0,7)===ym;});
+  const sumW=function(a){return a.reduce(function(s,r){return s+(r.tw||0);},0);};
+  const lateN=function(a){return a.filter(function(r){return lateDays(lgEtaOf(r),r.status)>0;}).length;};
+  setHTML('lg-k-transit', Math.round(sumW(transit)).toLocaleString());
+  setHTML('lg-k-pending', Math.round(sumW(pending)).toLocaleString());
+  setHTML('lg-k-month', Math.round(sumW(doneM)).toLocaleString());
+  setHTML('lg-k-transit-n', t('lg_n').replace('{n}',transit.length)+(lateN(transit)?' · '+t('lg_over').replace('{n}',lateN(transit)):''));
+  setHTML('lg-k-pending-n', t('lg_n').replace('{n}',pending.length));
+  setHTML('lg-k-month-n', t('lg_n').replace('{n}',doneM.length));
+  setHTML('lg-scope', all?t('lg_scope_all'):t('lg_scope_one'));
+  /* 筛选：状态 / 来源工厂 / 关键字 */
+  const fSt=lgFilterVal('lg-f-status'), fFac=lgFilterVal('lg-f-fac');
+  const q=(lgFilterVal('lg-q')||'').trim().toLowerCase();
+  if(fFac){
+    ships=ships.filter(function(r){return r.factory===fFac||r.fromFac===fFac;});
+    inbs=inbs.filter(function(r){return r.fromFac===fFac;});
+  }
+  if(q){ships=ships.filter(function(r){return lgMatchQ(r,q);});inbs=inbs.filter(function(r){return lgMatchQ(r,q);});}
+  if(fSt==='todo'){
+    ships=ships.filter(function(r){return (r.status||'在途')!=='已入库';});
+    inbs=inbs.filter(function(r){return (r.status||'待入库')==='待入库';});
+  }else if(fSt){
+    ships=ships.filter(function(r){return (r.status||'在途')===fSt;});
+    inbs=inbs.filter(function(r){return (r.status||'待入库')===fSt;});
+  }
+  ships.sort(byDtDesc);inbs.sort(byDtDesc);
+  setHTML('lg-out', ships.length?ships.map(function(r){return _lgCell(r,canConfirm,false);}).join('')
+    :'<tr><td colspan="8" class="muted">'+t('lg_empty_out')+'</td></tr>');
+  setHTML('lg-in', inbs.length?inbs.map(function(r){return _lgCell(r,canConfirm,true);}).join('')
+    :'<tr><td colspan="8" class="muted">'+t('lg_empty_in')+'</td></tr>');
 }
 function confirmInbound(id){
   let inb=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');
@@ -3427,6 +3640,10 @@ function _rebuildInboundFor(id){
   /* ③ 按批次号匹配 */
   if(!ship) ship=records.find(r=>r.ty==='Ship'&&String(r.batch)===sid&&!tombMeta['inbound:'+r.id]);
   if(!ship) return false;
+  /* 补建前先查重：该发货单可能已经有入库（id 类型错配时旧的严格比较会漏判），
+     不查重就 pushRec 会让「确认收货」每点一次多一条入库。 */
+  const exist=records.find(r=>r.ty==='Inbound'&&String(r.linkId)===String(ship.id)&&!tombMeta[r.id]);
+  if(exist){ _doConfirmInbound(exist); return true; }
   const inb=pushRec({id:genGid(),dt:ship.dt,ty:'Inbound',custId:0,custName:'来料入库',
     items:(ship.items||[]).map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note})),
     tw:ship.tw,ta:0,ticket:'',op:opName(),batch:ship.batch,dest:ship.dest||'',
@@ -3457,6 +3674,19 @@ function _doConfirmInbound(inb){
 
 /* ===== Search / Churn / Reports (reconstructed) ===== */
 function typeClass(t){return ({Receive:'g',Ship:'a',Inbound:'r',Produce:'b',Sale:'s',Crush:'o'})[t]||'s';}
+/* 「保存并查看检索」：跳到检索页并把刚保存的单据预设为筛选条件，直达该条记录。
+   此前 saveReceive / saveShipping 两处调用此函数却从未定义，按钮一按就抛 ReferenceError，
+   保存后跳转检索整个失效（回收单、配送单各一处）。 */
+function presetSearchAndGo(type,key){
+  go('search');
+  if(typeof initSearchDates==='function')initSearchDates();
+  if(typeof fillSearchType==='function')fillSearchType();
+  const set=function(id,v){const el=document.getElementById(id);if(el)el.value=(v==null?'':v);};
+  set('s-name','');set('s-phone','');set('s-acct','');
+  set('s-type',type||'');
+  set('s-note',key||''); /* 回收单 note 含票号、配送单 note 含批次号，按备注即可命中 */
+  runSearch();
+}
 function runSearch(){
   try{
     const q={
@@ -3549,7 +3779,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-08-29c';
+const APP_BUILD='2026-08-30a';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -3605,10 +3835,29 @@ function reconcileAll(){
   records.filter(r=>r.ty==='Ship').forEach(function(ship){
     /* 若该发货单的入库已被显式删除（墓碑标记），绝不自动重建——这是修复「删除后随同步复活」的关键 */
     if(tombMeta['inbound:'+ship.id])return;   /* 该发货单的入库已被显式删除：绝不自动重建 */
-    let inb=records.find(r=>r.ty==='Inbound'&&r.linkId===ship.id);
+    /* 类型无关匹配：跨设备同步来的 id 可能是数字（seed 老数据）也可能是字符串（新建 gid），
+       此前用 === 比较，一旦类型不一致就漏判，于是同一发货单每跑一次校验就被补建一条入库，
+       表现为「换浏览器同步一次，总厂入库就多一条」。 */
+    let list=records.filter(function(r){return r.ty==='Inbound'&&String(r.linkId)===String(ship.id);});
     /* 入库记录本身落了墓碑（本端或他端删过）：先剔除，再按缺失处理重建，
        否则会出现「一条已删的入库挡着、永远补不出新入库」的死锁。 */
-    if(inb&&tombMeta[inb.id]){ records=records.filter(r=>r.id!==inb.id); inb=null; }
+    list=list.filter(function(r){ if(tombMeta[r.id]){ records=records.filter(x=>String(x.id)!==String(r.id)); return false; } return true; });
+    /* 同一发货单只允许保留一条入库：历史上因类型错配已经补建出的重复记录，
+       保留「已入库」优先、其次 ts 最新的一条，其余落墓碑剔除并随同步清理服务端，
+       否则换设备同步一次就再叠一条、永远收敛不了。 */
+    if(list.length>1){
+      list.sort(function(a,b){
+        const ad=a.status==='已入库'?1:0, bd=b.status==='已入库'?1:0;
+        if(ad!==bd)return bd-ad;
+        return (b.ts||0)-(a.ts||0);
+      });
+      list.slice(1).forEach(function(r){
+        records=records.filter(x=>String(x.id)!==String(r.id));
+        addTomb(r.id, currentRole); fixed++;
+      });
+      list=list.slice(0,1);
+    }
+    let inb=list[0]||null;
     if(!inb){
       pushRec({id:genGid(),dt:ship.dt,ty:'Inbound',custId:0,custName:'来料入库',items:(ship.items||[]).map(it=>({m:'混装',f:it.f,c:'',w:it.w,note:it.note})),tw:ship.tw,ta:0,ticket:'',op:'auto',batch:ship.batch,dest:'',note:'from '+(ship.fromFac||ship.factory)+' · batch '+ship.batch,factory:'Sagamu',status:ship.status==='已入库'?'已入库':'待入库',linkId:ship.id,fromFac:ship.fromFac||ship.factory});
       fixed++;
