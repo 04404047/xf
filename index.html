@@ -3386,8 +3386,9 @@ function editRawInv(key,field,val){
   const ov=invRawEdit[key]||{};
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='f')ov.f=String(val||'').trim();
-  else if(field==='w')ov.w=Math.max(0,Math.round(+val||0));
-  if(ov.w==null){ const b=Math.round((flattenRaw(computeInventory(effectiveFactory()))[key]||0)); ov.w=b+(invAdjustRaw[key]||0); }
+  else if(field==='w'){ ov.w=Math.max(0,Math.round(Number(val)||0)); if(invAdjustRaw[key]!=null)delete invAdjustRaw[key]; /* 绝对重量覆盖相对校正，避免随后改 m/f 时把 +入库 偏移加回来 */ }
+  if(ov.w==null){ const comp=flattenRaw(computeInventory(effectiveFactory())); const b=Math.round(Number(comp[key]||0)); ov.w=Number(b)+Number(invAdjustRaw[key]||0); }
+  ov.w=Number(ov.w)||0;
   invRawEdit[key]=ov;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
 }
@@ -3397,8 +3398,9 @@ function editPelletInv(key,field,val){
   const ov=invPelletEdit[key]||{};
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='c')ov.c=String(val||'').trim();
-  else if(field==='bags')ov.bags=Math.max(0,Math.round(+val||0));
-  if(ov.bags==null){ const b=Math.round((flattenPellet(computeInventory(effectiveFactory()))[key]||0)/BAG_KG); ov.bags=b+(invAdjust[key]||0); }
+  else if(field==='bags'){ ov.bags=Math.max(0,Math.round(Number(val)||0)); if(invAdjust[key]!=null)delete invAdjust[key]; /* 绝对袋数覆盖相对校正，避免随后改 m/c 时把 +入库 偏移加回来 */ }
+  if(ov.bags==null){ const comp=flattenPellet(computeInventory(effectiveFactory())); const b=Math.round(Number(comp[key]||0)/BAG_KG); ov.bags=Number(b)+Number(invAdjust[key]||0); }
+  ov.bags=Number(ov.bags)||0;
   invPelletEdit[key]=ov;clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
 }
@@ -3409,8 +3411,8 @@ function renderInventory(){
   const rawDel=invDeleted.raw||{};
   const rawKeys=Array.from(new Set([...Object.keys(fr).filter(k=>fr[k]>0.0001), ...Object.keys(invAdjustRaw).filter(k=>(invAdjustRaw[k]||0)!==0), ...Object.keys(invRawEdit)])).filter(k=>!rawDel[k]).sort();
   const rawRows=rawKeys.map(k=>{
-    const [m,f]=k.split('|');const base=Math.round(fr[k]||0);const ov=invRawEdit[k];
-    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?(ov.w!=null?ov.w:(base+(invAdjustRaw[k]||0))):(base+(invAdjustRaw[k]||0));
+    const [m,f]=k.split('|');const base=Math.round(Number(fr[k]||0));const adj=Number(invAdjustRaw[k]||0);const ov=invRawEdit[k];
+    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?(ov.w!=null?Number(ov.w)||0:(base+adj)):(base+adj);
     if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editRawInv',["@attr:data-k","m","@value"])} style="width:72px"/></td>
         <td><input class="inv-mat-t" type="text" value="${esc(curF)}" data-k="${esc(k)}" data-field="f" ${actOn('change','editRawInv',["@attr:data-k","f","@value"])} style="width:72px"/></td>
@@ -3418,15 +3420,15 @@ function renderInventory(){
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${curF==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num">${Math.round(curW).toLocaleString()} kg</td></tr>`;
   }).join('');
-  const rawTotal=rawKeys.reduce((s,k)=>{const ov=invRawEdit[k];const base=Math.round(fr[k]||0);return s+(ov?(ov.w!=null?ov.w:(base+(invAdjustRaw[k]||0))):(base+(invAdjustRaw[k]||0)));},0);
+  const rawTotal=rawKeys.reduce((s,k)=>{const ov=invRawEdit[k];const base=Math.round(Number(fr[k]||0));const adj=Number(invAdjustRaw[k]||0);return s+(ov?(ov.w!=null?Number(ov.w)||0:(base+adj)):(base+adj));},0);
   const rawFoot=rawKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'原料合计':'Raw total'}</td><td class="num">${Math.round(rawTotal).toLocaleString()} kg</td></tr>`:'';
   setHTML('inv-raw', (rawRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无原料库存':'No raw stock'}</td></tr>`)+rawFoot);
   const pel=flattenPellet(inv);
   const pelDel=invDeleted.pellet||{};
   const pelKeys=Array.from(new Set([...Object.keys(pel).filter(k=>pel[k]>0.0001), ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0), ...Object.keys(invPelletEdit)])).filter(k=>!pelDel[k]).sort();
   const pelRows=pelKeys.map(k=>{
-    const [m,c]=k.split("|");const base=Math.round((pel[k]||0)/BAG_KG);const ov=invPelletEdit[k];
-    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?(ov.bags!=null?ov.bags:(base+(invAdjust[k]||0))):(base+(invAdjust[k]||0));
+    const [m,c]=k.split("|");const base=Math.round(Number(pel[k]||0)/BAG_KG);const adj=Number(invAdjust[k]||0);const ov=invPelletEdit[k];
+    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?(ov.bags!=null?Number(ov.bags)||0:(base+adj)):(base+adj);
     if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editPelletInv',["@attr:data-k","m","@value"])} style="width:60px"/></td>
         <td><input class="inv-mat-t u-w80" type="text" value="${esc(curC||'—')}" data-k="${esc(k)}" data-field="c" ${actOn('change','editPelletInv',["@attr:data-k","c","@value"])}/></td>
@@ -3434,7 +3436,7 @@ function renderInventory(){
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(curB)} ${unitBag()}</td></tr>`;
   }).join('');
-  const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round((pel[k]||0)/BAG_KG);return s+(ov?(ov.bags!=null?ov.bags:(base+(invAdjust[k]||0))):(base+(invAdjust[k]||0)));},0);
+  const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round(Number(pel[k]||0)/BAG_KG);const adj=Number(invAdjust[k]||0);return s+(ov?(ov.bags!=null?Number(ov.bags)||0:(base+adj)):(base+adj));},0);
   const pelFoot=pelKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'成品合计':'Finished total'}</td><td class="num">${Math.round(pelTotalBags).toLocaleString()} ${unitBag()}</td></tr>`:'';
   setHTML('inv-pellet', (pelRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无成品库存':'No finished stock'}</td></tr>`)+pelFoot);
   if(isTopRole()){ const h=document.getElementById('inv-edit-hint'); if(h)h.style.display=''; } else { const h=document.getElementById('inv-edit-hint'); if(h)h.style.display='none'; }
@@ -3820,7 +3822,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01d';
+const APP_BUILD='2026-09-01e';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4037,10 +4039,21 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
   }
   if(remoteProducts&&typeof remoteProducts==='object'&&Object.keys(remoteProducts).length)products=remoteProducts;
   if(Array.isArray(remotePriceHist))priceHist=remotePriceHist;
-  if(remoteInvAdjust&&typeof remoteInvAdjust==='object')Object.assign(invAdjust,remoteInvAdjust);
-  if(remoteInvAdjustRaw&&typeof remoteInvAdjustRaw==='object')Object.assign(invAdjustRaw,remoteInvAdjustRaw);
-  if(remoteInvRawEdit&&typeof remoteInvRawEdit==='object')Object.assign(invRawEdit,remoteInvRawEdit);
-  if(remoteInvPelletEdit&&typeof remoteInvPelletEdit==='object')Object.assign(invPelletEdit,remoteInvPelletEdit);
+  /* 库存覆盖合并：逐字段 LWW（本地优先），杜绝「远端只改了 m/c 的覆盖对象把本地已手填的 bags/w 冲掉」导致的编辑复原 */
+  function mergeInvOverlay(local, remote){
+    if(!remote||typeof remote!=='object')return;
+    for(const k in remote){
+      const r=remote[k];
+      if(!r||typeof r!=='object'){ if(r!==undefined)local[k]=r; continue; } /* 标量（invAdjust/invAdjustRaw）直接取值 */
+      const l=local[k];
+      if(!l||typeof l!=='object')local[k]=Object.assign({},r);
+      else local[k]=Object.assign({},r,l); /* 本地字段优先，远程独有字段补齐（双设备各自改不同字段时合并保留） */
+    }
+  }
+  mergeInvOverlay(invAdjust,remoteInvAdjust);
+  mergeInvOverlay(invAdjustRaw,remoteInvAdjustRaw);
+  mergeInvOverlay(invRawEdit,remoteInvRawEdit);
+  mergeInvOverlay(invPelletEdit,remoteInvPelletEdit);
   /* 库存删除墓碑：先合并远端墓碑到本地（取较新时间戳），再强制剔除已删键——这是修复"删除几秒后复活"的关键：
      服务端对库存 map 是合并存储，被删的键不会因 push 中 absent 而消失；必须由墓碑在每次 pull 后显式剔除。 */
   if(remoteInvDeleted&&typeof remoteInvDeleted==='object'){
