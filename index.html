@@ -632,7 +632,7 @@
           <button type="button" class="btn ghost sm" data-act="cancelShipEdit" data-args="[]" data-i18n="ship_cancel_edit">取消编辑</button>
         </div>
         <div class="panel">
-          <div class="panel-head"><h3 data-i18n="s_title">新建发货批次 → 总厂造粒</h3><div class="right"><span class="pill" id="ship-stock-hint"></span></div></div>
+          <div class="panel-head"><h3 data-i18n="s_title">新建发货批次 → 总厂造粒</h3></div>
           <div class="panel-body">
             <div class="row">
               <div class="field"><label for="s-batch" data-i18n="s_batch">批次号（可手动输入）</label><input id="s-batch" placeholder="SH-119"/></div>
@@ -644,11 +644,11 @@
             <div class="note" data-i18n="s_pick_note">配送量按实际装车量填写，不与收购量挂钩；混装多品种/颜色请在备注说明，总厂确认收货后计入原料库存。</div>
             <div class="tbl-scroll">
             <table id="ship-tbl">
-              <thead><tr><th scope="col" data-i18n="h_form">形态</th><th scope="col" class="num" data-i18n="ship_instock">本厂在库(kg)</th><th scope="col" data-i18n="s_ship">发货(kg)</th><th scope="col" data-i18n="s_note">备注(混装说明)</th></tr></thead>
+              <thead><tr><th scope="col" data-i18n="h_form">形态</th><th scope="col" data-i18n="s_ship">发货(kg)</th><th scope="col" data-i18n="s_note">备注(混装说明)</th></tr></thead>
               <tbody id="ship-rows"></tbody>
             </table>
             </div>
-            <div class="ship-total"><span data-i18n="ship_total">本单合计</span> <b id="ship-total-v">0</b> kg <span class="u-danger" id="ship-over"></span></div>
+            <div class="ship-total"><span data-i18n="ship_total">本单合计</span> <b id="ship-total-v">0</b> kg</div>
             <div class="row mt">
               <div class="field u-flex1"><label for="s-shipnote" data-i18n="ship_note_all">整单备注</label><input id="s-shipnote" placeholder="含 PP/PE/PVC 混合破碎料" data-i18n-ph="ship_note_ph"/></div>
               <div class="field"><label for="s-carrier" data-i18n="s_carrier">承运商</label><input id="s-carrier" placeholder="GreenLine Logistics" data-i18n-ph="ship_carrier_ph"/></div>
@@ -1198,7 +1198,7 @@ const I18N = {
     churn_title:"特殊筛选 · 可能流失客户 / 缺货恢复", churn_note:"断货时，快速定位「单次供货量大 / 月供货量大」的客户，按材质分类联系其恢复供货；状态标红者优先跟进。",
     churn_single:"单次供货量 ≥ (kg)", churn_month:"月供货量 ≥ (kg)", churn_mat:"按材质", churn_run:"筛选", churn_export:"⬇ 导出联系方式",
     churn_bulk:"大料(kg)", churn_crushed:"破碎料(kg)", churn_pvc:"PVC(kg)", churn_all:"全部", h_mat_pvc:"PVC",
-    r_day:"日", r_month:"月", r_quarter:"季", r_year:"年", r_print:"🖨 打印", r_nesrea:"⬇ 环保合规上报",
+    r_day:"今日", r_month:"本月", r_quarter:"本季", r_year:"本年", r_print:"🖨 打印", r_nesrea:"⬇ 环保合规上报",
     r_trend:"回收 vs 出入 趋势", r_trend_hq:"回收 vs 入库 趋势", r_trend_br:"回收 vs 配送 趋势", r_by_mat:"按材质（kg）", r_by_form:"按形态",
     rk_recv:"回收量", rk_ship:"配送量", rk_inbound:"入库量", rk_amt:"金额", rk_diff:"差额(含损耗)",
     r_note:"差额 = 回收量 − 配送/入库量 − 造粒原料消耗 − 破碎损耗（大料→破碎料转换损耗约 8%）。环保合规导出含物料量与供货方登记，对接环保登记库。",
@@ -1281,7 +1281,7 @@ const I18N = {
     churn_title:"Special filter · At-risk / restock-recovery customers", churn_note:"When short on stock, quickly find customers with large single or monthly supply, by material, to re-engage; prioritize those flagged red.",
     churn_single:"Single supply ≥ (kg)", churn_month:"Monthly supply ≥ (kg)", churn_mat:"By material", churn_run:"Filter", churn_export:"⬇ Export contacts",
     churn_bulk:"Bulk (kg)", churn_crushed:"Crushed (kg)", churn_pvc:"PVC (kg)", churn_all:"All", h_mat_pvc:"PVC",
-    r_day:"Day", r_month:"Month", r_quarter:"Quarter", r_year:"Year", r_print:"🖨 Print", r_nesrea:"⬇ Eco compliance",
+    r_day:"Today", r_month:"This Month", r_quarter:"Quarter", r_year:"Year", r_print:"🖨 Print", r_nesrea:"⬇ Eco compliance",
     r_trend:"Receive vs outbound trend", r_trend_hq:"Receive vs Inbound trend", r_trend_br:"Receive vs Ship trend", r_by_mat:"By material (kg)", r_by_form:"By form",
     rk_recv:"Received", rk_ship:"Shipped", rk_inbound:"Inbound", rk_amt:"Amount", rk_diff:"Difference (incl. loss)",
     r_note:"Difference = Received − Shipped/Inbound − pelletizing consumption − crushing loss (大料→破碎料 loss, ~8%). Eco-compliance export includes material volumes & supplier registry for the environmental registry.",
@@ -2939,11 +2939,6 @@ function updateShipTotal(){
   let tot=0;
   document.querySelectorAll('#ship-rows .ship-w').forEach(function(i){tot+=(+i.value||0);});
   const v=document.getElementById('ship-total-v');if(v)v.textContent=Math.round(tot).toLocaleString();
-  const ref=shipStockRef();
-  const hint=document.getElementById('ship-stock-hint');
-  if(hint)hint.textContent=(lang==='zh'?'本厂破碎料在库 ':'Fragment stock ')+ref.toLocaleString()+' kg';
-  const ov=document.getElementById('ship-over');
-  if(ov)ov.textContent=(tot>ref&&ref>0)?t('ship_over').replace('{n}',Math.round(tot-ref).toLocaleString()):'';
 }
 /* 预计到厂：逾期/今日到厂高亮。已入库不再计逾期，避免历史单长期飘红 */
 function lateDays(eta,status){
@@ -2967,9 +2962,8 @@ function renderShipRows(){
   /* 新建发货单时默认日期为当天，编辑态由 editShip 回显，不覆盖 */
   if(!editingShipId){const sd=document.getElementById('s-date');if(sd&&!sd.value)sd.value=today();}
   const forms=['破碎料'];
-  const ref=shipStockRef();
   el.innerHTML=forms.map(function(f){
-    return '<tr data-f="'+f+'"><td class="u-vmid">'+t('opt_frag')+'</td><td class="u-vmid num muted">'+ref.toLocaleString()+'</td><td class="u-vmid"><input class="ship-w" type="number" value="0" min="0" step="1" style="width:110px" placeholder="0" '+actOn('input','updateShipTotal',[])+'/> <span class="unit">kg</span></td><td class="u-vmid"><input class="ship-note" style="width:100%;min-width:160px" placeholder="'+esc(lang==='zh'?'混装说明（多品种/颜色）':'mixed note')+'"/></td></tr>';
+    return '<tr data-f="'+f+'"><td class="u-vmid">'+t('opt_frag')+'</td><td class="u-vmid"><input class="ship-w" type="number" value="0" min="0" step="1" style="width:110px" placeholder="0" '+actOn('input','updateShipTotal',[])+'/> <span class="unit">kg</span></td><td class="u-vmid"><input class="ship-note" style="width:100%;min-width:160px" placeholder="'+esc(lang==='zh'?'混装说明（多品种/颜色）':'mixed note')+'"/></td></tr>';
   }).join('');
   updateShipTotal();
 }
@@ -3120,7 +3114,7 @@ function statusTag(s){
 const titles={dashboard:'nav_dashboard',receiving:'nav_receiving',today:'nav_today',customers:'nav_customers',produce:'nav_produce',sell:'nav_sell',inventory:'nav_inventory',shipping:'nav_shipping',logistics:'nav_logistics',pricing:'nav_pricing',search:'nav_search',reports:'nav_reports',settings:'nav_settings'};
 const roleBadgeMap={boss:{zh:'老板',en:'Boss'},devAdmin:{zh:'管理员（全权限）',en:'Admin (full)'},factoryAdmin:{zh:'工厂管理员',en:'Factory Admin'},registrar:{zh:'登记员',en:'Registrar'},auditor:{zh:'审计员',en:'Auditor'}};
 const lanDevices=[{name:'OPIC 终端',ip:'192.168.1.21'},{name:'Ikeja 终端',ip:'192.168.1.22'},{name:'仓库 PDA',ip:'192.168.1.30'}];
-let currentPeriod='month'; /* 报表周期：month / quarter / year / all */
+let currentPeriod='month'; /* 报表周期：day|today / month|thismonth / quarter / year */
 
 /* ===== Produce ===== */
 function addProduceRow(o){
@@ -3389,6 +3383,7 @@ function editRawInv(key,field,val){
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='f')ov.f=String(val||'').trim();
   else if(field==='w')ov.w=Math.max(0,Math.round(+val||0));
+  if(ov.w==null){ const b=Math.round((flattenRaw(computeInventory(effectiveFactory()))[key]||0)); ov.w=b+(invAdjustRaw[key]||0); }
   invRawEdit[key]=ov;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
 }
@@ -3399,6 +3394,7 @@ function editPelletInv(key,field,val){
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='c')ov.c=String(val||'').trim();
   else if(field==='bags')ov.bags=Math.max(0,Math.round(+val||0));
+  if(ov.bags==null){ const b=Math.round((flattenPellet(computeInventory(effectiveFactory()))[key]||0)/BAG_KG); ov.bags=b+(invAdjust[key]||0); }
   invPelletEdit[key]=ov;clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
 }
@@ -3410,7 +3406,7 @@ function renderInventory(){
   const rawKeys=Array.from(new Set([...Object.keys(fr).filter(k=>fr[k]>0.0001), ...Object.keys(invAdjustRaw).filter(k=>(invAdjustRaw[k]||0)!==0), ...Object.keys(invRawEdit)])).filter(k=>!rawDel[k]).sort();
   const rawRows=rawKeys.map(k=>{
     const [m,f]=k.split('|');const base=Math.round(fr[k]||0);const ov=invRawEdit[k];
-    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?ov.w:(base+(invAdjustRaw[k]||0));
+    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?(ov.w!=null?ov.w:(base+(invAdjustRaw[k]||0))):(base+(invAdjustRaw[k]||0));
     if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editRawInv',["@attr:data-k","m","@value"])} style="width:72px"/></td>
         <td><input class="inv-mat-t" type="text" value="${esc(curF)}" data-k="${esc(k)}" data-field="f" ${actOn('change','editRawInv',["@attr:data-k","f","@value"])} style="width:72px"/></td>
@@ -3418,7 +3414,7 @@ function renderInventory(){
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${curF==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num">${Math.round(curW).toLocaleString()} kg</td></tr>`;
   }).join('');
-  const rawTotal=rawKeys.reduce((s,k)=>{const ov=invRawEdit[k];const base=Math.round(fr[k]||0);return s+(ov?ov.w:(base+(invAdjustRaw[k]||0)));},0);
+  const rawTotal=rawKeys.reduce((s,k)=>{const ov=invRawEdit[k];const base=Math.round(fr[k]||0);return s+(ov?(ov.w!=null?ov.w:(base+(invAdjustRaw[k]||0))):(base+(invAdjustRaw[k]||0)));},0);
   const rawFoot=rawKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'原料合计':'Raw total'}</td><td class="num">${Math.round(rawTotal).toLocaleString()} kg</td></tr>`:'';
   setHTML('inv-raw', (rawRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无原料库存':'No raw stock'}</td></tr>`)+rawFoot);
   const pel=flattenPellet(inv);
@@ -3426,7 +3422,7 @@ function renderInventory(){
   const pelKeys=Array.from(new Set([...Object.keys(pel).filter(k=>pel[k]>0.0001), ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0), ...Object.keys(invPelletEdit)])).filter(k=>!pelDel[k]).sort();
   const pelRows=pelKeys.map(k=>{
     const [m,c]=k.split("|");const base=Math.round((pel[k]||0)/BAG_KG);const ov=invPelletEdit[k];
-    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?ov.bags:(base+(invAdjust[k]||0));
+    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?(ov.bags!=null?ov.bags:(base+(invAdjust[k]||0))):(base+(invAdjust[k]||0));
     if(isTopRole()){
       return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editPelletInv',["@attr:data-k","m","@value"])} style="width:60px"/></td>
         <td><input class="inv-mat-t u-w80" type="text" value="${esc(curC||'—')}" data-k="${esc(k)}" data-field="c" ${actOn('change','editPelletInv',["@attr:data-k","c","@value"])}/></td>
@@ -3434,7 +3430,7 @@ function renderInventory(){
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(curB)} ${unitBag()}</td></tr>`;
   }).join('');
-  const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round((pel[k]||0)/BAG_KG);return s+(ov?ov.bags:(base+(invAdjust[k]||0)));},0);
+  const pelTotalBags=pelKeys.reduce((s,k)=>{const ov=invPelletEdit[k];const base=Math.round((pel[k]||0)/BAG_KG);return s+(ov?(ov.bags!=null?ov.bags:(base+(invAdjust[k]||0))):(base+(invAdjust[k]||0)));},0);
   const pelFoot=pelKeys.length?`<tr class="inv-total"><td colspan="2">${lang==='zh'?'成品合计':'Finished total'}</td><td class="num">${Math.round(pelTotalBags).toLocaleString()} ${unitBag()}</td></tr>`:'';
   setHTML('inv-pellet', (pelRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无成品库存':'No finished stock'}</td></tr>`)+pelFoot);
   if(isTopRole()){ const h=document.getElementById('inv-edit-hint'); if(h)h.style.display=''; } else { const h=document.getElementById('inv-edit-hint'); if(h)h.style.display='none'; }
@@ -3761,8 +3757,19 @@ function exportChurnExcel(){exportExcel(['姓名','电话','累计供货(kg)','�
 function lastNDays(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
 function repAggregate(period){
   const recs=scopeRecords();
+  const y0=PLANT_TODAY.slice(0,4), m0=+PLANT_TODAY.slice(5,7), q0=Math.floor((m0-1)/3);
+  const inPeriod=r=>{
+    if(!r.dt)return false;
+    const y=r.dt.slice(0,4), m=+r.dt.slice(5,7), q=Math.floor((m-1)/3);
+    if(period==='day'||period==='today')return r.dt===PLANT_TODAY;
+    if(period==='month'||period==='thismonth')return isThisMonth(r.dt);
+    if(period==='quarter')return y===y0&&q===q0;
+    if(period==='year')return y===y0;
+    return true;
+  };
   let recv=0,ship=0,amt=0;
   recs.forEach(r=>{
+    if(!inPeriod(r))return;
     if(r.ty==='Receive'){recv+=r.tw;amt+=r.ta;}
     else if(r.ty==='Ship')ship+=r.tw;
     else if(r.ty==='Sale')amt+=r.ta;
@@ -3795,7 +3802,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01b';
+const APP_BUILD='2026-09-01c';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
