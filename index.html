@@ -909,10 +909,14 @@
       <section class="view" id="view-reports" data-page-node-id="C4MUSoWFPKRVuPvbr3RZEX">
         <div class="toolbar" data-page-node-id="Ojv0hOZ4YoGzJNOsCeiqub">
           <div class="seg" id="rep-seg" data-page-node-id="2Co4UItQQMJhR2XRqErLbq">
-            <button type="button" data-p="day" data-act="setPeriod" data-args="[&quot;day&quot;,&quot;@el&quot;]" data-i18n="r_day" data-page-node-id="o1fsfxjNJTVuaWaaiVs9OH">日</button>
-            <button type="button" data-p="month" class="active" data-act="setPeriod" data-args="[&quot;month&quot;,&quot;@el&quot;]" data-i18n="r_month" data-page-node-id="qyuYH11OqICEolk1KN8lMA">月</button>
-            <button type="button" data-p="quarter" data-act="setPeriod" data-args="[&quot;quarter&quot;,&quot;@el&quot;]" data-i18n="r_quarter" data-page-node-id="pMP4lpNdMPns3xwJVyqaRn">季</button>
-            <button type="button" data-p="year" data-act="setPeriod" data-args="[&quot;year&quot;,&quot;@el&quot;]" data-i18n="r_year" data-page-node-id="YDyp8ZncVffn16aR3BWhhZ">年</button>
+            <button type="button" data-p="day" data-act="setPeriod" data-args="[&quot;day&quot;]" data-i18n="r_day" data-page-node-id="o1fsfxjNJTVuaWaaiVs9OH">日</button>
+            <button type="button" data-p="month" class="active" data-act="setPeriod" data-args="[&quot;month&quot;]" data-i18n="r_month" data-page-node-id="qyuYH11OqICEolk1KN8lMA">月</button>
+            <button type="button" data-p="year" data-act="setPeriod" data-args="[&quot;year&quot;]" data-i18n="r_year" data-page-node-id="YDyp8ZncVffn16aR3BWhhZ">年</button>
+          </div>
+          <div class="rep-picker">
+            <input id="rep-day" type="date" class="u-w160" data-act-change="renderReport" data-args-change="[]" data-page-node-id="repDayPk"/>
+            <input id="rep-month" type="month" class="u-w160" style="display:none" data-act-change="renderReport" data-args-change="[]" data-page-node-id="repMonPk"/>
+            <input id="rep-year" type="number" min="2018" max="2100" step="1" class="u-w110" style="display:none" data-act-change="renderReport" data-args-change="[]" data-page-node-id="repYrPk"/>
           </div>
           <div class="spacer" data-page-node-id="Jg9KnmIgncUNWAV87ZllAp"></div>
           <button type="button" class="btn ghost sm" data-act="printPage" data-args="[]" data-i18n="r_print" data-page-node-id="SrvquMxjT2VCjbXHy6SniY">🖨 打印</button>
@@ -3755,16 +3759,13 @@ function runChurn(){
 function contactCust(id){const c=customers.find(x=>x.id===id);if(c)toast(lang==='zh'?'联系 '+c.name+'：'+c.phone:'Contact '+c.name+': '+c.phone);}
 function exportChurnExcel(){exportExcel(['姓名','电话','累计供货(kg)','金额(₦)'], visibleCustomers().map(c=>[c.name,c.phone,c.kg,c.amt]),'churn.xls');}
 function lastNDays(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
-function repAggregate(period){
+function repAggregate(b){
   const recs=scopeRecords();
-  const y0=PLANT_TODAY.slice(0,4), m0=+PLANT_TODAY.slice(5,7), q0=Math.floor((m0-1)/3);
   const inPeriod=r=>{
     if(!r.dt)return false;
-    const y=r.dt.slice(0,4), m=+r.dt.slice(5,7), q=Math.floor((m-1)/3);
-    if(period==='day'||period==='today')return r.dt===PLANT_TODAY;
-    if(period==='month'||period==='thismonth')return isThisMonth(r.dt);
-    if(period==='quarter')return y===y0&&q===q0;
-    if(period==='year')return y===y0;
+    if(b.kind==='day')return r.dt===b.v;
+    if(b.kind==='month')return r.dt.slice(0,7)===b.v;
+    if(b.kind==='year')return r.dt.slice(0,4)===b.v;
     return true;
   };
   let recv=0,ship=0,amt=0;
@@ -3776,10 +3777,26 @@ function repAggregate(period){
   });
   return {recv,ship,amt};
 }
+function reportBoundary(){
+  if(currentPeriod==='day')return {kind:'day',v:(document.getElementById('rep-day')||{}).value||PLANT_TODAY};
+  if(currentPeriod==='month')return {kind:'month',v:(document.getElementById('rep-month')||{}).value||PLANT_TODAY.slice(0,7)};
+  return {kind:'year',v:(document.getElementById('rep-year')||{}).value||PLANT_TODAY.slice(0,4)};
+}
 function setPeriod(p,btn){
-  try{currentPeriod=p;document.querySelectorAll('#rep-seg button').forEach(b=>b.classList.toggle('active',b.dataset.p===p));}catch(e){}
   try{
-    const a=repAggregate(p);
+    currentPeriod=p;
+    document.querySelectorAll('#rep-seg button').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+    const d=document.getElementById('rep-day'),m=document.getElementById('rep-month'),y=document.getElementById('rep-year');
+    if(d){if(!d.value)d.value=PLANT_TODAY; d.style.display=p==='day'?'':'none';}
+    if(m){if(!m.value)m.value=PLANT_TODAY.slice(0,7); m.style.display=p==='month'?'':'none';}
+    if(y){if(!y.value)y.value=PLANT_TODAY.slice(0,4); y.style.display=p==='year'?'':'none';}
+  }catch(e){}
+  renderReport();
+}
+function renderReport(){
+  try{
+    const b=reportBoundary();
+    const a=repAggregate(b);
     const setC=(i,v)=>{const e=document.getElementById('rv'+i);if(e)e.innerHTML=v;};
     setC(1,Math.round(a.recv).toLocaleString()+' <small>kg</small>');
     setC(2,Math.round(a.ship).toLocaleString()+' <small>kg</small>');
@@ -3789,6 +3806,7 @@ function setPeriod(p,btn){
     const trend=document.getElementById('rep-trend');if(trend)svgLine(trend,[a.recv],[a.ship],['收','发']);
     const bar=document.getElementById('rep-bar');if(bar)svgBar(bar,['PP','PE','PVC'],[Math.round(a.recv*0.4),Math.round(a.recv*0.35),Math.round(a.recv*0.25)],'#2563eb');
     const pie=document.getElementById('rep-pie');if(pie)svgPie(pie,[{l:'大料',v:a.recv*0.6,c:'#2563eb'},{l:'破碎料',v:a.recv*0.4,c:'#16a34a'}]);
+    const rt=document.getElementById('rt-title');if(rt)rt.textContent=(lang==='zh'?'收购 vs 发货 趋势 · ':'Recv vs Ship · ')+b.v;
   }catch(e){}
 }
 function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('#view-settings > .panel').forEach(p=>p.classList.toggle('hidden',p.id!=='tab-'+t));if(t==='sync')renderSyncConfig();
@@ -3802,7 +3820,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01c';
+const APP_BUILD='2026-09-01d';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4060,7 +4078,7 @@ function syncPull(){
       settings.lastSync=nowStr();
       // 用服务端权威时间作为下次增量基线，避免客户端时钟偏差导致漏拉
       settings.lastSyncTs = j.serverTime || Date.now();
-      saveState(); refreshAfterSave(); renderCustomers(); renderAccounts(); renderFinance(); renderInventory(); updateSyncUI();
+      saveState(); refreshAfterSync(); renderCustomers(); renderAccounts(); renderFinance(); renderInventory(); updateSyncUI();
       /* 价格页若正开着，同步后必须重绘，否则界面显示的还是同步前的旧价 */
       if(document.getElementById('price-body')){ try{ renderPricing(); }catch(e){ /* 价格页未初始化则跳过 */ } }
       return true;
@@ -4195,7 +4213,7 @@ function exportExcel(headers, rows, filename){
 function exportCustomersExcel(){exportExcel(['姓名','电话','开户行','账号','累计供货(kg)','金额(₦)','最近供货'],visibleCustomers().map(c=>[c.name,c.phone,c.bank,c.acct,c.kg,c.amt,c.last]),'customers.xls');}
 function exportSearchExcel(){const rows=[];document.querySelectorAll('#s-body tr').forEach(tr=>{const tds=[...tr.children].map(td=>td.textContent.trim());if(tds.length)rows.push(tds);});exportExcel(['日期','类型','客户','电话','开户行','账号','地址','备注','材质','重量','金额','操作'],rows,'search.xls');}
 function exportTodayExcel(){exportExcel(['日期','客户','材质','形态','颜色','重量','金额'],visibleRecords().filter(r=>r.ty==='Receive'&&r.dt===PLANT_TODAY).flatMap(r=>(r.items||[]).map(it=>[r.dt,r.custName,it.m,it.f,it.c,it.w,r.ta])),'today.xls');}
-function exportReportExcel(){const a=repAggregate(currentPeriod);exportExcel(['指标','值'],[['收购量',Math.round(a.recv)],['发货量',Math.round(a.ship)],['金额',Math.round(a.amt)]],'report.xls');}
+function exportReportExcel(){const a=repAggregate(reportBoundary());exportExcel(['指标','值'],[['收购量',Math.round(a.recv)],['发货量',Math.round(a.ship)],['金额',Math.round(a.amt)]],'report.xls');}
 function exportAllExcel(){const recs=records.map(r=>[r.dt,r.ty,r.custName,r.tw,r.ta]);exportExcel(['日期','类型','客户','重量(kg)','金额(₦)'],recs,'all_data.xls');}
 function exportAudit(kind,fmt){
   try{
@@ -4469,6 +4487,19 @@ function refreshAfterSave(){
     const av=document.querySelector('.view.active');
     renderView(av?(av.id||'').replace(/^view-/,'') : '');
   }catch(e){ if(window.console)console.error('refreshAfterSave',e); }
+}
+/* 后台同步完成后的只读刷新：只更新看板/列表/库存/财务等只读数据，
+   绝不重建当前视图的可编辑表单输入（如配送装车量 ship-w），
+   否则每 20s 一次的自动同步会把正在录入的值清空（复原回 0）。 */
+function refreshAfterSync(){
+  recomputeDashboard();drawDashboardCharts();updateSyncUI();renderAudit();
+  renderCustomers();renderAccounts();renderFinance();renderInventory();
+  try{ if(document.getElementById('price-body'))renderPricing(); }catch(e){}
+  const av=document.querySelector('.view.active');
+  const vid=av?(av.id||'').replace(/^view-/,'') : '';
+  if(vid!=='shipping') renderShipRows();   /* 配送视图下不重建装车量表单，保留正在输入的值 */
+  renderShipList(); renderLogistics(); renderReceiveList(); renderSell(); renderProduce();
+  setPeriod(currentPeriod, document.querySelector('#rep-seg .active'));
 }
 function refreshControls(){
   const show=(id,ok)=>{const e=document.getElementById(id);if(e)e.style.display=ok?'':'none';};
