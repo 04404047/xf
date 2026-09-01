@@ -76,6 +76,10 @@ let deletedFinances = []; // 已删除财务 {id, ts}（墓碑）
    priceBy：按厂区分桶 {Sagamu:{},OPIC:{},Ikeja:{}}；products：成品种类·颜色总目录；
    priceHist：调价历史；invAdjust/invAdjustRaw/invRawEdit/invPelletEdit：库存校正覆盖。 */
 let priceBy = { Sagamu: {}, OPIC: {}, Ikeja: {} };
+/* priceTsBy：每个价格键的最后修改时间戳（键格式 "material|form|color"）。
+   没有它，push 只能无条件 Object.assign，任何一台还存着旧价的设备上线就会把新价打回去——
+   客户端表现为「价格改完立刻复原」。有了它，服务端也按键做 LWW，只让新值覆盖旧值。 */
+let priceTsBy = { Sagamu: {}, OPIC: {}, Ikeja: {} };
 let products = {};
 let priceHist = [];
 let invAdjust = {};
@@ -113,6 +117,13 @@ try {
     deletedFinances = normTomb(d.deletedFinances);
     if (d.accounts && typeof d.accounts === 'object') accounts = d.accounts;
     if (d.priceBy && typeof d.priceBy === 'object') priceBy = d.priceBy;
+    /* 旧数据文件没有 priceTsBy：补齐为空桶，任何带 ts 的更新都能覆盖无版本信息的旧值。 */
+    priceTsBy = { Sagamu: {}, OPIC: {}, Ikeja: {} };
+    if (d.priceTsBy && typeof d.priceTsBy === 'object') {
+      ['Sagamu', 'OPIC', 'Ikeja'].forEach(f => {
+        if (d.priceTsBy[f] && typeof d.priceTsBy[f] === 'object') priceTsBy[f] = Object.assign({}, d.priceTsBy[f]);
+      });
+    }
     if (d.products && typeof d.products === 'object') products = d.products;
     if (Array.isArray(d.priceHist)) priceHist = d.priceHist;
     if (d.invAdjust && typeof d.invAdjust === 'object') invAdjust = d.invAdjust;
@@ -255,7 +266,7 @@ function persist() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, fx, accounts, priceBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
+    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, fx, accounts, priceBy, priceTsBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
     const packed = encryptData(plain);
     const payload = packed.enc ? ('ENC:' + packed.data) : plain;
     /* 落盘失败必须重试并留痕：只 console.warn 一次会造成「业务显示成功、重启后数据没了」的静默丢失 */
@@ -706,11 +717,24 @@ const server = http.createServer(async (req, res) => {
       delete financesById[fid];
       if (deletedFinances.findIndex(t => t.id === fid) < 0) deletedFinances.push({ id: fid, ts: now });
     });
-    /* 价格主数据（按厂区分别并入，Object.assign 合并避免跨厂互相覆盖/清空） */
+    /* 价格主数据：按键级 LWW 合并（跨厂分桶互不干扰）。
+       此前是无条件 Object.assign，等于「最后推送的设备说了算」——一台存着旧价的离线设备上线，
+       就会把别人刚改的新价整体打回，前端表现为「价格改完立刻复原」。
+       现在以 priceTsBy 里的时间戳为准：远端 ts 不大于服务端 ts 的键直接丢弃。 */
     if (body.priceBy && typeof body.priceBy === 'object') {
+      const inTs = (body.priceTsBy && typeof body.priceTsBy === 'object') ? body.priceTsBy : {};
       ['Sagamu', 'OPIC', 'Ikeja'].forEach(fac => {
         if (!priceBy[fac]) priceBy[fac] = {};
-        if (body.priceBy[fac] && typeof body.priceBy[fac] === 'object') priceBy[fac] = Object.assign(priceBy[fac], body.priceBy[fac]);
+        if (!priceTsBy[fac]) priceTsBy[fac] = {};
+        if (!body.priceBy[fac] || typeof body.priceBy[fac] !== 'object') return;
+        const rts = (inTs[fac] && typeof inTs[fac] === 'object') ? inTs[fac] : {};
+        Object.keys(body.priceBy[fac]).forEach(k => {
+          const it = Number(rts[k]) || 0;        /* 老客户端不带 ts → 视为 0 */
+          const st = Number(priceTsBy[fac][k]) || 0;
+          if (it < st) return;                   /* 推送来的是旧价：保留服务端新价 */
+          priceBy[fac][k] = body.priceBy[fac][k];
+          if (it > st) priceTsBy[fac][k] = it;
+        });
       });
     }
     if (body.products && typeof body.products === 'object' && Object.keys(body.products).length) products = body.products;
@@ -775,6 +799,7 @@ const server = http.createServer(async (req, res) => {
       finances: incFinances,
       deletedFinances: incDelFinances,
       priceBy: priceBy,
+      priceTsBy: priceTsBy,
       products: products,
       priceHist: priceHist,
       invAdjust: invAdjust,
