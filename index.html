@@ -3412,10 +3412,10 @@ function renderInventory(){
   const rawKeys=Array.from(new Set([...Object.keys(fr).filter(k=>fr[k]>0.0001), ...Object.keys(invAdjustRaw).filter(k=>(invAdjustRaw[k]||0)!==0), ...Object.keys(invRawEdit)])).filter(k=>!rawDel[k]).sort();
   const rawRows=rawKeys.map(k=>{
     const [m,f]=k.split('|');const base=Math.round(Number(fr[k]||0));const adj=Number(invAdjustRaw[k]||0);const ov=invRawEdit[k];
-    const curM=ov?ov.m:m; const curF=ov?ov.f:f; const curW=ov?(ov.w!=null?Number(ov.w)||0:(base+adj)):(base+adj);
+    const curM=(ov&&ov.m!=null&&ov.m!=='')?ov.m:m; const curF=(ov&&ov.f!=null&&ov.f!=='')?ov.f:f; const curW=ov?(ov.w!=null?Number(ov.w)||0:(base+adj)):(base+adj);
     if(isTopRole()){
-      return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editRawInv',["@attr:data-k","m","@value"])} style="width:72px"/></td>
-        <td><input class="inv-mat-t" type="text" value="${esc(curF)}" data-k="${esc(k)}" data-field="f" ${actOn('change','editRawInv',["@attr:data-k","f","@value"])} style="width:72px"/></td>
+      return `<tr><td><b>${esc(curM)}</b></td>
+        <td><b>${curF==='大料'?t('opt_bulk'):t('opt_frag')}</b></td>
         <td class="num"><input class="inv-adj u-w90" type="number" min="0" step="1" value="${Math.round(curW)}" data-k="${esc(k)}" data-field="w" ${actOn('change','editRawInv',["@attr:data-k","w","@num"])}/> kg<button type="button" aria-label="关闭" data-i18n-aria="ariaClose" data-k="${esc(k)}" ${actOn('click','deleteInvEntry',["raw","@attr:data-k"])} title="${t('inv_del')}" style="margin-left:6px;border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px">✕</button></td></tr>`;
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${curF==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num">${Math.round(curW).toLocaleString()} kg</td></tr>`;
@@ -3428,10 +3428,10 @@ function renderInventory(){
   const pelKeys=Array.from(new Set([...Object.keys(pel).filter(k=>pel[k]>0.0001), ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0), ...Object.keys(invPelletEdit)])).filter(k=>!pelDel[k]).sort();
   const pelRows=pelKeys.map(k=>{
     const [m,c]=k.split("|");const base=Math.round(Number(pel[k]||0)/BAG_KG);const adj=Number(invAdjust[k]||0);const ov=invPelletEdit[k];
-    const curM=ov?ov.m:m; const curC=ov?ov.c:c; const curB=ov?(ov.bags!=null?Number(ov.bags)||0:(base+adj)):(base+adj);
+    const curM=(ov&&ov.m!=null&&ov.m!=='')?ov.m:m; const curC=(ov&&ov.c!=null&&ov.c!=='')?ov.c:c; const curB=ov?(ov.bags!=null?Number(ov.bags)||0:(base+adj)):(base+adj);
     if(isTopRole()){
-      return `<tr><td><input class="inv-mat-t" type="text" value="${esc(curM)}" data-k="${esc(k)}" data-field="m" ${actOn('change','editPelletInv',["@attr:data-k","m","@value"])} style="width:60px"/></td>
-        <td><input class="inv-mat-t u-w80" type="text" value="${esc(curC||'—')}" data-k="${esc(k)}" data-field="c" ${actOn('change','editPelletInv',["@attr:data-k","c","@value"])}/></td>
+      return `<tr><td><b>${esc(curM)}</b></td>
+        <td>${c?esc(colorLabel(c)):'—'}</td>
         <td class="num"><input class="inv-adj" type="number" min="0" value="${Math.round(curB)}" data-k="${esc(k)}" data-field="bags" ${actOn('change','editPelletInv',["@attr:data-k","bags","@num"])} style="width:70px"/> ${unitBag()}<button type="button" aria-label="关闭" data-i18n-aria="ariaClose" data-k="${esc(k)}" ${actOn('click','deleteInvEntry',["pellet","@attr:data-k"])} title="${t('inv_del')}" style="margin-left:6px;border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px">✕</button></td></tr>`;
     }
     return `<tr><td><b>${esc(curM)}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(curB)} ${unitBag()}</td></tr>`;
@@ -3822,7 +3822,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01e';
+const APP_BUILD='2026-09-01f';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
