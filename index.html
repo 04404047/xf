@@ -2198,6 +2198,16 @@ function computeInventory(scope){
 }
 function flattenRaw(inv){const out={};for(const k in inv.raw){const p=k.split('|');const nk=p[1]+'|'+p[2];out[nk]=(out[nk]||0)+inv.raw[k];}return out;}
 function flattenPellet(inv){const out={};for(const k in inv.pellet){const p=k.split('|');const nk=p[1]+'|'+(p[2]||'');out[nk]=(out[nk]||0)+inv.pellet[k];}return out;}
+function pelletStockMap(fac){
+  /* 真·成品库存 = 业务记录基础袋数 + 人工相对校正(invAdjust) + 历史绝对覆盖(invPelletEdit.bags，兼容老数据)；
+     与 库存管理页 renderInventory 的成品行算法完全一致，使 造粒/出售 视图与手动改袋数、成品入库 同口径联动。 */
+  const inv=computeInventory(fac); const pel=flattenPellet(inv); const out={}; const del=invDeleted.pellet||{};
+  Object.keys(pel).forEach(k=>{ if(pel[k]>0.0001) out[k]=Math.max(0,Math.round(pel[k]/BAG_KG)); });
+  Object.keys(invAdjust).forEach(k=>{ if(del[k]>0) return; const a=Number(invAdjust[k]||0); if(a!==0||out[k]!=null) out[k]=Math.max(0,(out[k]||0)+a); });
+  Object.keys(invPelletEdit).forEach(k=>{ if(del[k]>0) return; const ov=invPelletEdit[k]; if(ov&&ov.bags!=null) out[k]=Math.max(0,Number(ov.bags)||0); });
+  Object.keys(out).forEach(k=>{ if(del[k]>0) delete out[k]; });
+  return out;
+}
 
 /* ============ 单据详情（查看任意单据的完整信息，不再跳转客户页） ============ */
 function closeRecordModal(){const m=document.getElementById('record-modal');if(m)m.classList.add('hidden');}
@@ -3235,8 +3245,8 @@ function renderProduce(){
   const fac=effectiveFactory();
   const sh=document.getElementById('pr-shift');if(sh&&!sh.options.length)sh.innerHTML=shiftOptions('白班');
   if(!editingProduceId && !document.querySelectorAll('#pr-body tr').length)addProduceRow();
-  const inv=computeInventory(fac);const pel=flattenPellet(inv);
-  const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round((pel[k]||0)/BAG_KG).toLocaleString()} <span class="muted">${unitBag()}</span></td></tr>`;}).join('');
+  const pel=pelletStockMap(fac);
+  const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(pel[k]||0).toLocaleString()} <span class="muted">${unitBag()}</span></td></tr>`;}).join('');
   setHTML('pr-inv', invRows||`<tr><td colspan="3" class="muted">—</td></tr>`);
   const list=records.filter(r=>r.ty==='Produce'&&(fac==='Sagamu'||r.factory===fac));
   const byDate={};
@@ -3305,7 +3315,7 @@ function resetSell(){
   document.getElementById('sl-order').value='SO-'+nextBatchNum('SO-');
   sellRecalc();
 }
-function availFor(m,c){const inv=computeInventory(effectiveFactory());const pel=flattenPellet(inv);return Math.max(0,Math.round(pel[`${m}|${c}`]||0));}
+function availFor(m,c){const pel=pelletStockMap(effectiveFactory());return Math.max(0,(pel[`${m}|${c}`]||0)*BAG_KG);}
 function saveSell(){
   if(!can('sell')){toast(lang==='zh'?'无销售权限':'No sell permission');return;}
   if(!isHQorAllFactory()){toast(lang==='zh'?'分厂不开放成品出售':'Branch cannot sell finished goods');return;}
@@ -3368,8 +3378,8 @@ function deleteSell(id){
 }
 function renderSell(){
   const fac=effectiveFactory();
-  const inv=computeInventory(fac);const pel=flattenPellet(inv);
-  const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round((pel[k]||0)/BAG_KG).toLocaleString()} ${unitBag()}</td></tr>`;}).join('');
+  const pel=pelletStockMap(fac);
+  const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(pel[k]||0).toLocaleString()} ${unitBag()}</td></tr>`;}).join('');
   setHTML('sl-inv', invRows||`<tr><td colspan="3" class="muted">—</td></tr>`);
   const list=records.filter(r=>r.ty==='Sale'&&(fac==='Sagamu'||r.factory===fac));
   const rev=list.reduce((s,r)=>s+r.ta,0);
@@ -3395,14 +3405,36 @@ function editRawInv(key,field,val){
 /* 成品库存自由编辑：覆盖材质/颜色/袋数（老板） */
 function editPelletInv(key,field,val){
   if(currentRole!=='boss')return;
+  if(field==='bags'){
+    /* 相对校正模型：成品袋数 = 造粒产出 − 出售 + 手动差额； Manual 差额写入 invAdjust[key]（与「成品入库」表单同通道）。
+       这样手动改袋数既保留与造粒的联动（造粒变动 → 库存随之变），又让同材质累加生效——
+       旧版的绝对覆盖会冲掉相对校正且脱离造粒源，正是「改袋数后不联动 / 加相同材质无反应」的根因。 */
+    const baseB=Math.round(Number(flattenPellet(computeInventory(effectiveFactory()))[key]||0)/BAG_KG);
+    invAdjust[key]=Math.max(0,Math.round(Number(val)||0)-baseB);
+    clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+    toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
+    return;
+  }
+  /* 材质/颜色分支：界面已锁定为只读文本，无输入触发，属历史兼容死路径 */
   const ov=invPelletEdit[key]||{};
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='c')ov.c=String(val||'').trim();
-  else if(field==='bags'){ ov.bags=Math.max(0,Math.round(Number(val)||0)); if(invAdjust[key]!=null)delete invAdjust[key]; /* 绝对袋数覆盖相对校正，避免随后改 m/c 时把 +入库 偏移加回来 */ }
-  if(ov.bags==null){ const comp=flattenPellet(computeInventory(effectiveFactory())); const b=Math.round(Number(comp[key]||0)/BAG_KG); ov.bags=Number(b)+Number(invAdjust[key]||0); }
-  ov.bags=Number(ov.bags)||0;
   invPelletEdit[key]=ov;clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
+}
+/* 历史兼容：旧版把成品袋数写成 invPelletEdit[key].bags 绝对覆盖；新模型统一走相对 invAdjust[key]。
+   把绝对袋数折算成相对差额并入 invAdjust，删除绝对键，避免渲染既读绝对又读相对导致重复/脱钩。
+   幂等：仅当 .bags 存在才折算，折完即删。 */
+function foldPelletEditBags(){
+  for(const k in invPelletEdit){
+    const ov=invPelletEdit[k];
+    if(ov&&ov.bags!=null){
+      const baseB=Math.round(Number(flattenPellet(computeInventory(effectiveFactory()))[k]||0)/BAG_KG);
+      invAdjust[k]=(invAdjust[k]||0)+(Number(ov.bags)||0)-baseB;
+      delete ov.bags;
+      if(Object.keys(ov).length===0)delete invPelletEdit[k];
+    }
+  }
 }
 function renderInventory(){
   const fac=effectiveFactory();
@@ -3822,7 +3854,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01f';
+const APP_BUILD='2026-09-01g';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4759,6 +4791,7 @@ function resetSelectedData(cat){
 }
 /* ===== init ===== */
 loadState();
+foldPelletEditBags(); /* 启动即把历史绝对袋数覆盖折算进相对校正，统一与造粒联动口径 */
 autoDetectSync(); /* 若由一体化服务器托管且未配置同步地址，自动指向同源服务器 */
 reconcileAll(); /* 启动即校验发货/入库关联完整性 */
 runAutoPurge(); /* 造粒记录按天自动清理（带墓碑，跨设备生效） */
