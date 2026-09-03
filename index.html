@@ -343,6 +343,19 @@
     .lg-kpis{grid-template-columns:1fr;}
     .edit-banner{flex-wrap:wrap;}
   }
+
+  /* ============ 空状态（统一规范：列表/面板无数据时展示，避免空白误判为故障） ============ */
+  .empty{padding:40px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .empty svg{width:46px;height:46px;opacity:.5;flex:none;}
+  .empty .empty-t{font-size:15px;font-weight:600;color:var(--ink);}
+  .empty .empty-s{font-size:13px;line-height:1.6;max-width:320px;}
+  .tbl-scroll .empty{padding:28px 16px;}
+
+  /* 移动端底部安全区：侧边栏/浮层贴底时避让刘海与home指示条 */
+  @media(max-width:768px){
+    .sidebar{bottom:env(safe-area-inset-bottom);}
+    .hamburger{bottom:calc(12px + env(safe-area-inset-bottom));}
+  }
 </style>
 </head>
 <body data-page-node-id="yMx8QGJa3HesSMGJHj7wGa">
@@ -388,7 +401,8 @@
       <a data-view="today" data-page-node-id="qvIfffyqbeMhxwOMViqBYE"><span class="ic" data-page-node-id="OR6whSfqUFCdjGAhi48S2p">🗓</span><span data-i18n="nav_today" data-page-node-id="4F3OLJy69HVK7dFtzyskyx">当日回收</span></a>
       <a data-view="customers" data-page-node-id="DNroL0EpZCttZWMqOVNs4A"><span class="ic" data-page-node-id="WQktY3OcHr6RbHCDZDeJmC">☺</span><span data-i18n="nav_customers" data-page-node-id="5Jkt7lwqglnvoYnX04lVip">客户</span></a>
       <div class="nav-group" data-i18n="g_prod" data-page-node-id="vMeYwScxXQL5DXGhNKtT8F">生产加工</div>
-            <a data-view="produce" data-page-node-id="D9dUPOKMkJol9GqvJ90kbl"><span class="ic" data-page-node-id="tAy0hChRphyxTNi0PcNbgQ">⚙</span><span data-i18n="nav_produce" data-page-node-id="DXVbM1km4JLr1oFcJfQd5i">生产造粒</span></a>
+      <a data-view="crush"><span class="ic">⚒</span><span data-i18n="nav_crush">破碎清洗</span></a>
+      <a data-view="produce" data-page-node-id="D9dUPOKMkJol9GqvJ90kbl"><span class="ic" data-page-node-id="tAy0hChRphyxTNi0PcNbgQ">⚙</span><span data-i18n="nav_produce" data-page-node-id="DXVbM1km4JLr1oFcJfQd5i">生产造粒</span></a>
       <a data-view="sell" data-page-node-id="RD7t9GHmm0BIGpXAKTU4B8"><span class="ic" data-page-node-id="CzI98qGAq0QmhAoeHb1awt">💰</span><span data-i18n="nav_sell" data-page-node-id="3tveysqiI0IDb3C8aGC9Zn">成品出售</span></a>
       <a data-view="inventory" data-page-node-id="7Lvn5sC1OwJUffY4IWknUW"><span class="ic" data-page-node-id="ILPPd4XUU9a8iHjzkRYTEu">▤</span><span data-i18n="nav_inventory" data-page-node-id="U0NsGWpgAToG7iX4D73qmc">库存管理</span></a>
       <div class="nav-group" data-i18n="g_logi" data-page-node-id="JoofvBCHWlFG4QWMnB3KQZ">物流协同</div>
@@ -679,6 +693,41 @@
         </div>
       </section>
 
+      <!-- ===== Crush (破碎清洗) ===== -->
+      <section class="view" id="view-crush">
+        <div class="ok" data-i18n="crush_note_dyn">破碎清洗：将分拣后的大料投入破碎，产出破碎料（含约 8% 损耗）。破碎料可直接配送总厂或留厂库存。</div>
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-head"><h3 data-i18n="crush_title">新建破碎清洗单</h3><div class="right"><button type="button" class="btn ghost sm" data-act="resetCrush" data-args="[]" data-i18n="rc_reset">重置</button></div></div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="field"><label for="cr-shift" data-i18n="pr_shift">班次</label><select id="cr-shift"></select></div>
+                <div class="field"><label for="cr-date" data-i18n="rc_date">日期 *</label><input id="cr-date" type="date"/></div>
+                <div class="field"><label for="cr-op" data-i18n="rc_op">操作员</label><input id="cr-op" value=""/></div>
+                <div class="field"><label for="cr-batch">批次号</label><input id="cr-batch" value="CR-101"/></div>
+              </div>
+              <div class="tbl-scroll"><table>
+                <thead><tr><th scope="col" data-i18n="crush_machine">破碎机台</th><th scope="col" data-i18n="h_mat">材质</th><th scope="col" data-i18n="crush_in">投入大料(kg)</th><th scope="col" data-i18n="crush_out">产出破碎料(kg)</th><th scope="col" data-i18n="crush_loss">破碎损耗</th><th scope="col"></th></tr></thead>
+                <tbody id="cr-body"></tbody>
+              </table></div>
+              <div class="totals"><div><div class="k" data-i18n="crush_tin">合计投入</div><div class="v" id="cr-total-in">0 kg</div></div><div><div class="k" data-i18n="crush_tout">合计产出</div><div class="v" id="cr-total-out">0 kg</div></div></div>
+              <div class="row mt u-end10">
+                <button type="button" class="btn ghost" data-act="addCrushRow" data-args="[]" data-i18n="crush_add">+ 添加破碎明细</button>
+                <button type="button" class="btn eco" data-act="saveCrush" data-args="[]" id="cr-save-btn" data-i18n="crush_save">保存破碎单</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3 data-i18n="crush_inv">本厂原料库存</h3></div>
+            <div class="panel-body u-pad0"><div class="tbl-scroll"><table><thead><tr><th scope="col" data-i18n="h_mat">材质</th><th scope="col" data-i18n="h_form">形态</th><th scope="col" data-i18n="h_w">重量(kg)</th></tr></thead><tbody id="cr-inv"></tbody></table></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3 data-i18n="crush_list">破碎清洗记录</h3></div>
+          <div class="panel-body u-pad0"><div class="tbl-scroll"><table><thead><tr><th scope="col" data-i18n="h_date">日期</th><th scope="col">批次</th><th scope="col" data-i18n="pr_shift">班次</th><th scope="col" data-i18n="crush_machine">机台</th><th scope="col" data-i18n="h_mat">材质</th><th scope="col" data-i18n="crush_in">投入(kg)</th><th scope="col" data-i18n="crush_out">产出(kg)</th><th scope="col" data-i18n="crush_loss">损耗</th><th scope="col" data-i18n="rc_op">操作员</th><th scope="col"></th></tr></thead><tbody id="cr-list"></tbody></table></div></div>
+        </div>
+      </section>
+
       <!-- ===== Produce (生产造粒) ===== -->
       <section class="view" id="view-produce" data-page-node-id="KDmLImTf29NL8TcEy9fZGN">
         <div class="ok" data-i18n="pr_note_dyn" data-page-node-id="HjDqWMghrF2oH8nNmjAUVr">生产造粒：登记各班次各机台产出（粒子 / PVC 粉），自动计入成品库存。机台含 5 台造粒机（1–5 号）与 2 台 PVC 磨粉机（1–2 号）。</div>
@@ -696,6 +745,7 @@
                 <thead data-page-node-id="fcvBECWRC3EY6Izf6ok4yQ"><tr data-page-node-id="obotEGgFynlIdoBdbnK84g"><th scope="col" data-i18n="pr_machine" data-page-node-id="npRC35SyTayBHYDjwFUiQb">机台</th><th scope="col" data-i18n="h_mat" data-page-node-id="DBNyAazKJwIt3GAiIrNGxG">材质</th><th scope="col" data-i18n="h_color" data-page-node-id="hRuoUCCs0IZXWrnTckLUUx">颜色</th><th scope="col" data-i18n="produce_qty" data-page-node-id="waD4xiIHPfjg1mLBoxGy8u">产出数量(kg)</th><th scope="col" data-page-node-id="2MVvHqe4tZ04BKEi0EyqQn"></th></tr></thead>
                 <tbody id="pr-body" data-page-node-id="mUo6yZ4laSJFHKKB2vHG3W"></tbody>
               </table></div>
+              <div class="note mb" id="pr-frag-hint"></div>
               <div class="row mt u-end10" data-page-node-id="mzhbrqhc3O67ZDBORVb9fx">
                 <button type="button" class="btn ghost" data-act="addProduceRow" data-args="[]" data-i18n="rc_add" data-page-node-id="ikq91dySbfUvcGSJbvCS7n">+ 添加机台产出</button>
                 <button type="button" class="btn eco" data-act="saveProduce" data-args="[]" id="pr-save-btn" data-i18n="produce_save" data-page-node-id="FMTw6xBNWuDO18aWl13jVs">保存生产单</button>
@@ -1247,7 +1297,7 @@ const I18N = {
     hero_title:"综合作业台", hero_sub:"本厂以废旧塑料回收加工为核心，覆盖回收、破碎、造粒与销售全流程",
     d_rawinv:"在库原料", d_pellet:"在产粒子", d_produced:"今日造粒量", d_sold:"今日销售量", d_pending:"待入库(物流)", d_shipped:"今日配送量", d_transit:"在途配送",
     rc_title:"新建回收分拣单", rc_ocr:"📷 票据识别录入",
-    crush_title:"新建破碎清洗单", crush_in:"投入大料(kg)", crush_out:"产出破碎料(kg)", crush_loss:"破碎损耗", crush_loss_val:"约 8%", crush_save:"保存破碎单", crush_list:"破碎清洗记录", crush_inv:"本厂原料库存", crush_confirm:"确认入库",
+    crush_title:"新建破碎清洗单", crush_in:"投入大料(kg)", crush_out:"产出破碎料(kg)", crush_loss:"破碎损耗", crush_loss_val:"约 8%", crush_save:"保存破碎单", crush_list:"破碎清洗记录", crush_inv:"本厂原料库存", crush_confirm:"确认入库", crush_machine:"破碎机台", crush_add:"＋ 添加破碎明细", crush_tin:"合计投入", crush_tout:"合计产出", pr_frag_avail:"可用破碎料", pr_frag_need:"预计耗用", pr_frag_short:"破碎料不足",
     produce_title:"新建造粒生产单", produce_in:"投入破碎料(kg)", produce_out:"产出粒子(kg)", produce_yield:"造粒得率", produce_yield_val:"约 95%", produce_save:"保存生产单", produce_list:"造粒生产记录", produce_pellet:"在产粒子库存", produce_rate:"得率", pr_shift:"班次", pr_machine:"机台", produce_qty:"产出数量(kg)",
     sell_title:"新建成品出售单", sell_mat:"材质", sell_w:"数量(kg)", sell_price:"单价 ₦/kg", sell_amt:"销售额", sell_avail:"可用库存", sell_inv:"成品库存（材质·颜色）", sell_cust:"购货客户 *", sell_save:"保存出售单", sell_list:"成品出售记录", sell_rev:"累计销售额",
     logistics_title:"物流协同看板", logistics_out:"分厂配送", logistics_in:"总厂入库", logistics_confirm:"确认入库", logistics_pending:"待入库", logistics_transit:"在途", logistics_received:"已入库", logistics_from:"来源工厂", logistics_summary:"物流概览", logistics_empty:"暂无物流记录", lg_refresh:"从云端刷新", lg_syncing:"正在从云端刷新…", lg_noperm:"（本账号无入库确认权限，仅总厂可确认）", lg_empty_in:"暂无入库记录：请确认分厂已在「配送总厂」发货，并点击右上角「从云端刷新」", lg_kpi_transit:"在途", lg_kpi_pending:"待入库", lg_kpi_month:"本月已入库", lg_over:"逾期 {n} 天", lg_eta_today:"今日到厂", lg_receive:"确认收货", lg_empty_out:"暂无配送记录：分厂在「配送总厂」发货后将出现在这里", lg_carrier:"承运", lg_q:"搜索", lg_q_ph:"批次 / 车牌 / 承运商", lg_f_status:"状态", lg_f_todo:"待处理", lg_f_all:"全部", lg_scope_all:"可见范围：全部工厂", lg_scope_one:"可见范围：本厂", lg_n:"共 {n} 条", ship_edit_banner:"正在编辑发货单 {b} —— 保存将覆盖原单", ship_cancel_edit:"取消编辑", ship_instock:"本厂在库(kg)", ship_total:"本单合计", ship_over:"⚠ 超出在库 {n} kg，请核对装车量", ship_q:"批次 / 目的地 / 车牌", ship_f_all:"全部状态", ship_note_all:"整单备注", ship_note_ph:"含 PP/PE/PVC 混合破碎料", ship_carrier_ph:"GreenLine Logistics", ship_vehicle_ph:"Lagos KN-2234", ship_driver_ph:"Emeka O.", ship_cleared:"已退出编辑，表单已重置为新建",
@@ -1329,7 +1379,7 @@ const I18N = {
     hero_title:"Operations Console", hero_sub:"Plastic recovery & processing — receiving, crushing, pelletizing and sales.",
     d_rawinv:"Raw stock", d_pellet:"Pellets", d_produced:"Pelletized today", d_sold:"Sold today", d_pending:"Pending in (logistics)", d_shipped:"Shipped today", d_transit:"In transit",
     rc_title:"New receiving record",
-    crush_title:"New crushing batch", crush_in:"Bulk in (kg)", crush_out:"Crushed out (kg)", crush_loss:"Crush loss", crush_loss_val:"~8%", crush_save:"Save batch", crush_list:"Crushing records", crush_inv:"Raw stock", crush_confirm:"Confirm inbound",
+    crush_title:"New crushing batch", crush_in:"Bulk in (kg)", crush_out:"Crushed out (kg)", crush_loss:"Crush loss", crush_loss_val:"~8%", crush_save:"Save batch", crush_list:"Crushing records", crush_inv:"Raw stock", crush_confirm:"Confirm inbound", crush_machine:"Crusher", crush_add:"＋ Add line", crush_tin:"Total in", crush_tout:"Total out", pr_frag_avail:"Crushed available", pr_frag_need:"Est. consumption", pr_frag_short:"Insufficient crushed",
     produce_title:"New pelletizing batch", produce_in:"Crushed in (kg)", produce_out:"Pellets out (kg)", produce_yield:"Yield", produce_yield_val:"~95%", produce_save:"Save batch", produce_list:"Pelletizing records", produce_pellet:"Pellet stock", produce_rate:"Yield", pr_shift:"Shift", pr_machine:"Machine", produce_qty:"Output (kg)",
     sell_title:"New sales order", sell_mat:"Material", sell_w:"Qty (kg)", sell_price:"Unit ₦/kg", sell_amt:"Revenue", sell_avail:"Avail. stock", sell_inv:"Finished stock (mat·color)", sell_cust:"Buyer *", sell_save:"Save order", sell_list:"Sales records", sell_rev:"Total revenue",
     logistics_title:"Logistics board", logistics_out:"Branch shipments", logistics_in:"HQ inbound", logistics_confirm:"Confirm receipt", logistics_pending:"Pending", logistics_transit:"In transit", logistics_received:"Received", logistics_from:"From plant", logistics_summary:"Overview", logistics_empty:"No logistics records", lg_refresh:"Refresh from cloud", lg_syncing:"Refreshing from cloud…", lg_noperm:"(no confirm permission; HQ only)", lg_empty_in:"No inbound yet: ensure the branch shipped, then tap the refresh button above", lg_kpi_transit:"In transit", lg_kpi_pending:"Pending", lg_kpi_month:"Received this month", lg_over:"{n}d late", lg_eta_today:"Due today", lg_receive:"Confirm receipt", lg_empty_out:"No shipments yet — branch shipments appear here", lg_carrier:"Carrier", lg_q:"Search", lg_q_ph:"Batch / plate / carrier", lg_f_status:"Status", lg_f_todo:"Open", lg_f_all:"All", lg_scope_all:"Scope: all plants", lg_scope_one:"Scope: this plant", lg_n:"{n} items", ship_edit_banner:"Editing {b} — saving overwrites it", ship_cancel_edit:"Cancel edit", ship_instock:"In stock(kg)", ship_total:"Shipment total", ship_over:"⚠ {n} kg over stock — verify loading", ship_q:"Batch / dest / plate", ship_f_all:"All statuses", ship_note_all:"Note", ship_note_ph:"e.g. PP/PE/PVC mixed", ship_carrier_ph:"GreenLine Logistics", ship_vehicle_ph:"Lagos KN-2234", ship_driver_ph:"Emeka O.", ship_cleared:"Exited edit — form reset to new",
@@ -1520,6 +1570,12 @@ function effectiveFactory(){
   }
   return currentFactory;
 }
+/* 生产 / 库存作用域，与 effectiveFactory 职责分离：
+   effectiveFactory 决定「新记录归属哪个厂」，prodScope 决定「列表与库存按哪个范围统计」。
+   顶栏切到「全部工厂」时统一按 ALL 聚合（computeInventory 内建全集团口径），
+   保证列表条数与旁边的库存数字同源同口径。
+   旧版用 fac==='Sagamu' 恒真短路来「列全部」，导致列表显示三厂记录、库存却只算总厂。 */
+function prodScope(){ return isTopAllView()?'ALL':effectiveFactory(); }
 function visibleRecords(){
   if(isTopAllView()) return records;
   const f=currentFactory; return records.filter(r=>r.factory===f);
@@ -1729,6 +1785,15 @@ const MACHINES=[
   {id:'V1',name:'1号PVC磨粉机',type:'pvc'},
   {id:'V2',name:'2号PVC磨粉机',type:'pvc'}
 ];
+/* 破碎清洗机台：与造粒机台分开维护，避免破碎单误选造粒机。
+   破碎是大料→破碎料的唯一业务来源，造粒再消耗破碎料，这条链断了库存口径就全错。 */
+const CRUSHERS=[
+  {id:'C1',name:'1号破碎机'},
+  {id:'C2',name:'2号破碎机'},
+  {id:'C3',name:'3号清洗线'}
+];
+function crusherOptions(sel){return CRUSHERS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)}</option>`).join('');}
+function crusherName(id){const m=CRUSHERS.find(x=>x.id===id);return m?m.name:String(id==null?'':id);}
 function productMaterials(){return Object.keys(products);}
 function productColors(m){return products[m]||[];}
 function productColorOptions(m,sel){return productColors(m).map(c=>`<option value="${esc(c)}" ${sel===c?'selected':''}>${esc(colorLabel(c))}</option>`).join('');}
@@ -1949,6 +2014,11 @@ let toastTimer=null;
 function toast(msg){
   const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+/* 统一空状态：列表/面板无数据时调用，避免空白被误判为加载失败（大厂后台通用做法） */
+function emptyState(title, sub){
+  const ic='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><path d="M8 14h8"/><path d="M8 17h5"/></svg>';
+  return '<div class="empty">'+ic+'<div class="empty-t">'+title+'</div>'+(sub?'<div class="empty-s">'+sub+'</div>':'')+'</div>';
 }
 
 /* ============ State persistence ============ */
@@ -2208,8 +2278,23 @@ function computeInventory(scope){
       (r.items||[]).forEach(it=> inc(`${r.factory}|${it.m}|${it.f}`, it.w));
     } else if(r.ty==='Ship'){
       (r.items||[]).forEach(it=> inc(`${r.factory}|${it.m}|${it.f}`, -it.w));
+    } else if(r.ty==='Crush'){
+      /* 破碎清洗：大料 −，破碎料 +（默认按 CRUSH_LOSS 折算产出，允许手工覆盖产出量） */
+      (r.items||[]).forEach(it=>{
+        const inW=Number(it.inW||0);
+        const outW=(it.outW!=null&&it.outW!=='')?Number(it.outW):+(inW*(1-CRUSH_LOSS)).toFixed(1);
+        if(inW>0) inc(`${r.factory}|${it.m}|大料`, -inW);
+        if(outW>0) inc(`${r.factory}|${it.m}|破碎料`, outW);
+      });
     } else if(r.ty==='Produce'){
-      (r.items||[]).forEach(it=>{ incP(`${r.factory}|${it.m}|${it.c||''}`, it.outW); });
+      /* 造粒：粒子 +，破碎料 −（耗料按 PELLET_YIELD 得率反推）。
+         旧版只加粒子不扣原料，破碎料库存只增不减、永远虚高，这里补上闭环。 */
+      (r.items||[]).forEach(it=>{
+        const outW=Number(it.outW||0);
+        incP(`${r.factory}|${it.m}|${it.c||''}`, outW);
+        const needW=outW>0?+(outW/PELLET_YIELD).toFixed(1):0;
+        if(needW>0) inc(`${r.factory}|${it.m}|破碎料`, -needW);
+      });
     } else if(r.ty==='Sale'){
       (r.items||[]).forEach(it=>{ incP(`${r.factory}|${it.m}|${it.c||''}`, -it.w); });
     }
@@ -2219,13 +2304,22 @@ function computeInventory(scope){
 function flattenRaw(inv){const out={};for(const k in inv.raw){const p=k.split('|');const nk=p[1]+'|'+p[2];out[nk]=(out[nk]||0)+inv.raw[k];}return out;}
 function flattenPellet(inv){const out={};for(const k in inv.pellet){const p=k.split('|');const nk=p[1]+'|'+(p[2]||'');out[nk]=(out[nk]||0)+inv.pellet[k];}return out;}
 function pelletStockMap(fac){
-  /* 真·成品库存 = 业务记录基础袋数 + 人工相对校正(invAdjust) + 历史绝对覆盖(invPelletEdit.bags，兼容老数据)；
-     与 库存管理页 renderInventory 的成品行算法完全一致，使 造粒/出售 视图与手动改袋数、成品入库 同口径联动。 */
+  /* 真·成品库存 = 业务记录基础袋数 + 人工相对校正(invAdjust) + 历史绝对覆盖(invPelletEdit.bags，兼容老数据)。
+     口径与 库存管理页 renderInventory 的成品行严格一致：base = round(pel/BAG_KG)，显示 = base + adj，
+     不再对回放负值提前 clamp 为 0。这样 造粒 / 出售 / 归档(purgeProduce) 三处入口对库存的判读完全统一，
+     归档折算后库存数字与归档前一致（旧版 pelletStockMap 提前 clamp 会导致归档后成品袋数虚高）。 */
   const inv=computeInventory(fac); const pel=flattenPellet(inv); const out={}; const del=invDeleted.pellet||{};
-  Object.keys(pel).forEach(k=>{ if(pel[k]>0.0001) out[k]=Math.max(0,Math.round(pel[k]/BAG_KG)); });
-  Object.keys(invAdjust).forEach(k=>{ if(del[k]>0) return; const a=Number(invAdjust[k]||0); if(a!==0||out[k]!=null) out[k]=Math.max(0,(out[k]||0)+a); });
-  Object.keys(invPelletEdit).forEach(k=>{ if(del[k]>0) return; const ov=invPelletEdit[k]; if(ov&&ov.bags!=null) out[k]=Math.max(0,Number(ov.bags)||0); });
-  Object.keys(out).forEach(k=>{ if(del[k]>0) delete out[k]; });
+  const keys=Array.from(new Set([
+    ...Object.keys(pel).filter(k=>pel[k]>0.0001),
+    ...Object.keys(invAdjust).filter(k=>(invAdjust[k]||0)!==0),
+    ...Object.keys(invPelletEdit)
+  ])).filter(k=>!del[k]);
+  keys.forEach(k=>{
+    const base=Math.round(Number(pel[k]||0)/BAG_KG);
+    const adj=Number(invAdjust[k]||0);
+    const ov=invPelletEdit[k];
+    out[k]= ov ? (ov.bags!=null?Number(ov.bags)||0:(base+adj)) : (base+adj);
+  });
   return out;
 }
 
@@ -2337,7 +2431,7 @@ function closeCustModal(){document.getElementById('cust-modal').classList.add('h
 function deleteCust(id){
   if(!can('customer.delete')){toast(lang==='zh'?'无删除权限（仅工厂管理员 / 老板）':'No delete permission (factory admin/boss only)');return;}
   const c=customers.find(x=>x.id===id);if(!c)return;
-  if(c.factory&&c.factory!==currentFactory&&currentRole!=='boss'){toast(lang==='zh'?'不能删除其他工厂的客户':'Cannot delete customer of another factory');return;}
+  if(c.factory&&c.factory!==currentFactory&&!isTopRole()){toast(lang==='zh'?'不能删除其他工厂的客户':'Cannot delete customer of another factory');return;}
   if(!confirm(lang==='zh'?`确认删除客户「${c.name}」？其历史回收与配送记录仍按名称保留，不再关联该客户。`:`Delete customer ${c.name}? Historical records are kept by name and unlinked.`))return;
   customers=customers.filter(x=>x.id!==id);
   if(deletedCustomers.indexOf(id)<0)deletedCustomers.push(id);
@@ -3145,12 +3239,164 @@ function statusTag(s){
   return `<span class="tag ${m[0]}">${esc(lbl)}</span>`;
 }
 /* ===== Reconstructed JS (Crush module intentionally removed) ===== */
-const titles={dashboard:'nav_dashboard',receiving:'nav_receiving',today:'nav_today',customers:'nav_customers',produce:'nav_produce',sell:'nav_sell',inventory:'nav_inventory',shipping:'nav_shipping',logistics:'nav_logistics',pricing:'nav_pricing',search:'nav_search',reports:'nav_reports',settings:'nav_settings'};
+const titles={dashboard:'nav_dashboard',receiving:'nav_receiving',today:'nav_today',customers:'nav_customers',crush:'nav_crush',produce:'nav_produce',sell:'nav_sell',inventory:'nav_inventory',shipping:'nav_shipping',logistics:'nav_logistics',pricing:'nav_pricing',search:'nav_search',reports:'nav_reports',settings:'nav_settings'};
 const roleBadgeMap={boss:{zh:'老板',en:'Boss'},devAdmin:{zh:'管理员（全权限）',en:'Admin (full)'},factoryAdmin:{zh:'工厂管理员',en:'Factory Admin'},registrar:{zh:'登记员',en:'Registrar'},auditor:{zh:'审计员',en:'Auditor'}};
 const lanDevices=[{name:'OPIC 终端',ip:'192.168.1.21'},{name:'Ikeja 终端',ip:'192.168.1.22'},{name:'仓库 PDA',ip:'192.168.1.30'}];
 let currentPeriod='month'; /* 报表周期：day|today / month|thismonth / quarter / year */
 
 /* ===== Produce ===== */
+/* ===== Crush 破碎清洗 =====
+   大料 → 破碎料 的唯一业务来源，造粒再消耗破碎料，是整条生产链的中间环节。
+   旧版把它整个删掉了（导航无入口、视图无区块、无存取函数），只留下 i18n 文案与
+   检索下拉里的「破碎记录」选项，成了孤儿引用。这里补齐闭环：
+   录入 → 回放（大料− / 破碎料+）→ 造粒耗料 → 库存联动。 */
+let editingCrushId=null;
+/* 本厂原料可用量（大料 / 破碎料），含人工校正与删除墓碑，供破碎页实时显示与超投提示 */
+function rawAvailMap(){
+  const inv=computeInventory(prodScope()); const fr=flattenRaw(inv); const del=invDeleted.raw||{};
+  const out={};
+  Object.keys(fr).forEach(k=>{
+    if(del[k])return;
+    const ov=invRawEdit[k];
+    out[k]=Math.round(ov?(ov.w!=null?Number(ov.w)||0:(fr[k]+(invAdjustRaw[k]||0))):(fr[k]+(invAdjustRaw[k]||0)));
+  });
+  Object.keys(invAdjustRaw).forEach(k=>{ if(del[k]||out[k]!=null)return; out[k]=Math.round(Number(invAdjustRaw[k])||0); });
+  return out;
+}
+function crushRecalc(){
+  let tin=0,tout=0;
+  const avail=rawAvailMap();
+  document.querySelectorAll('#cr-body tr').forEach(tr=>{
+    const m=tr.querySelector('.cr-m').value;
+    const inW=Math.max(0,Number(tr.querySelector('.cr-in').value)||0);
+    const outW=Math.max(0,Number(tr.querySelector('.cr-out').value)||0);
+    tin+=inW; tout+=outW;
+    const le=tr.querySelector('.cr-loss');
+    if(le)le.innerHTML=inW>0?`${Math.round(inW-outW).toLocaleString()} kg <span class="muted">(${((inW-outW)/inW*100).toFixed(1)}%)</span>`:'<span class="muted">—</span>';
+    const ie=tr.querySelector('.cr-in');
+    if(ie){ const av=avail[m+'|大料']||0; ie.classList.toggle('over',inW>av); ie.title=(lang==='zh'?'可用大料 ':'Available bulk ')+Math.round(av).toLocaleString()+' kg'; }
+  });
+  const a=document.getElementById('cr-total-in');if(a)a.textContent=Math.round(tin).toLocaleString()+' kg';
+  const b=document.getElementById('cr-total-out');if(b)b.textContent=Math.round(tout).toLocaleString()+' kg';
+}
+function addCrushRow(o){
+  o=o||{};
+  const m0=o.m||productMaterials()[0]||'PP', mac0=o.machine||'C1';
+  const in0=(o.inW!=null)?o.inW:1000;
+  const out0=(o.outW!=null)?o.outW:Math.round(in0*(1-CRUSH_LOSS));
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><select class="cr-machine">${crusherOptions(mac0)}</select></td>
+    <td><select class="cr-m">${productMaterials().map(m=>`<option ${m===m0?'selected':''}>${esc(m)}</option>`).join('')}</select></td>
+    <td><input class="cr-in u-w90" type="number" value="${in0}" min="0" step="1"/></td>
+    <td><input class="cr-out u-w90" type="number" value="${out0}" min="0" step="1"/></td>
+    <td class="num cr-loss"></td>
+    <td><button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','removeRowThen',["crushRecalc"])}>✕</button></td>`;
+  const ie=tr.querySelector('.cr-in'), oe=tr.querySelector('.cr-out');
+  /* 投入变动按标准损耗率带出产出；用户一旦手改产出就不再自动覆盖，尊重实际称量结果 */
+  ie.addEventListener('input',()=>{ if(oe.dataset.manual!=='1')oe.value=Math.round((+ie.value||0)*(1-CRUSH_LOSS)); crushRecalc(); });
+  oe.addEventListener('input',()=>{ oe.dataset.manual='1'; crushRecalc(); });
+  document.getElementById('cr-body').appendChild(tr);
+  crushRecalc();
+}
+function resetCrush(){
+  editingCrushId=null;
+  const sb=document.getElementById('cr-save-btn');if(sb)sb.textContent=t('crush_save');
+  const tb=document.getElementById('cr-body');if(tb)tb.innerHTML='';
+  addCrushRow();
+  const d=document.getElementById('cr-date');if(d)d.value=today();
+  const o=document.getElementById('cr-op');if(o)o.value=opName();
+  const b=document.getElementById('cr-batch');if(b)b.value='CR-'+nextBatchNum('CR-');
+  const sh=document.getElementById('cr-shift');if(sh)sh.innerHTML=shiftOptions('白班');
+  renderCrush();
+}
+function saveCrush(){
+  if(!can('produce')){toast(lang==='zh'?'无破碎权限':'No crushing permission');return;}
+  const dEl=document.getElementById('cr-date'); const date=dEl?dEl.value:today();
+  const oEl=document.getElementById('cr-op'); const op=(oEl?oEl.value.trim():'')||opName();
+  const sEl=document.getElementById('cr-shift'); const shift=sEl?sEl.value:'白班';
+  const fac=effectiveFactory();
+  const items=[];let tin=0;
+  document.querySelectorAll('#cr-body tr').forEach(tr=>{
+    const mac=tr.querySelector('.cr-machine').value, m=tr.querySelector('.cr-m').value;
+    const inW=Math.max(0,Number(tr.querySelector('.cr-in').value)||0);
+    const outW=Math.max(0,Number(tr.querySelector('.cr-out').value)||0);
+    if(inW<=0&&outW<=0)return;
+    items.push({m:m,c:'',inW:inW,outW:outW,machine:mac});tin+=inW;
+  });
+  if(!items.length){toast(lang==='zh'?'请至少录入一行':'Add at least one line');return;}
+  const macNames=items.map(it=>crusherName(it.machine)).join('、');
+  if(editingCrushId){
+    const r=records.find(x=>String(x.id)===String(editingCrushId));
+    if(r){
+      r.dt=date;r.op=op;r.shift=shift;r.items=items;r.tw=tin;r.custName=macNames;r.note=macNames;r.ts=Date.now();r.rev=(r.rev||0)+1;
+      auditLog.unshift({time:nowHMS(),actor:op,action:'ac_crush',target:r.batch,detail:(lang==='zh'?'修改 · ':'edited · ')+macNames+' · '+Math.round(tin)+'kg'});
+      toast(lang==='zh'?'破碎单已修改':'Crush batch updated');
+    }
+  }else{
+    const exist=records.find(x=>x.ty==='Crush'&&x.factory===fac&&x.dt===date);
+    if(exist){
+      exist.op=op;exist.shift=shift;exist.items=items;exist.tw=tin;exist.custName=macNames;exist.note=macNames;exist.ts=Date.now();exist.rev=(exist.rev||0)+1;
+      auditLog.unshift({time:nowHMS(),actor:op,action:'ac_crush',target:exist.batch,detail:(lang==='zh'?'当日合并 · ':'merged today · ')+macNames+' · '+Math.round(tin)+'kg'});
+      toast(lang==='zh'?`已更新当日破碎单 ${exist.batch}`:`Updated today's crush ${exist.batch}`);
+    }else{
+      const batch='CR-'+nextBatchNum('CR-');
+      pushRec({id:genGid(),dt:date,ty:'Crush',shift:shift,custId:0,custName:macNames,items:items,tw:tin,ta:0,ticket:'',op:op,batch:batch,note:macNames,factory:fac});
+      auditLog.unshift({time:nowHMS(),actor:op,action:'ac_crush',target:batch,detail:macNames+' · '+Math.round(tin)+'kg'});
+      toast(lang==='zh'?`破碎单 ${batch} 已保存`:`Crush ${batch} saved`);
+    }
+  }
+  editingCrushId=null;
+  settings.pending=(settings.pending||0)+1;
+  saveState();refreshAfterSave();
+  resetCrush();
+}
+function editCrush(id){
+  const r=records.find(x=>String(x.id)===String(id));if(!r)return;
+  editingCrushId=id;
+  const d=document.getElementById('cr-date');if(d)d.value=r.dt;
+  const o=document.getElementById('cr-op');if(o)o.value=r.op||'';
+  const b=document.getElementById('cr-batch');if(b)b.value=r.batch||('CR-'+nextBatchNum('CR-'));
+  const sh=document.getElementById('cr-shift');if(sh)sh.innerHTML=shiftOptions(r.shift||'白班');
+  const tb=document.getElementById('cr-body');if(tb)tb.innerHTML='';
+  (r.items||[]).forEach(it=>addCrushRow({m:it.m,inW:it.inW,outW:it.outW,machine:it.machine}));
+  const sb=document.getElementById('cr-save-btn');if(sb)sb.textContent=(lang==='zh'?'保存修改':'Save changes');
+  go('crush');
+  toast(lang==='zh'?'已载入待修改破碎单':'Loaded for editing');
+}
+function deleteCrush(id){
+  const r=records.find(x=>String(x.id)===String(id));if(!r)return;
+  if(!can('produce')){toast(lang==='zh'?'无删除权限':'No delete permission');return;}
+  if(!confirm(lang==='zh'?`确认删除破碎单 ${r.batch}？原料库存将回退。`:`Delete ${r.batch}? Raw stock reverts.`))return;
+  records=records.filter(x=>String(x.id)!==String(id));
+  addTomb(id, currentRole);
+  settings.pending=(settings.pending||0)+1;
+  auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:r.batch,detail:lang==='zh'?'删除破碎单':'deleted crush batch'});
+  saveState();refreshAfterSave();
+  toast(lang==='zh'?'已删除破碎单':'Crush batch deleted');
+}
+function renderCrush(){
+  const fac=prodScope();
+  const sh=document.getElementById('cr-shift');if(sh&&!sh.options.length)sh.innerHTML=shiftOptions('白班');
+  if(!editingCrushId && !document.querySelectorAll('#cr-body tr').length)addCrushRow();
+  const avail=rawAvailMap();
+  const invRows=Object.keys(avail).filter(k=>Math.abs(avail[k])>0.0001).sort().map(k=>{
+    const [m,f]=k.split('|');const v=avail[k];
+    return `<tr><td><b>${esc(m)}</b></td><td>${f==='大料'?t('opt_bulk'):t('opt_frag')}</td><td class="num${v<0?' u-danger':''}">${Math.round(v).toLocaleString()} kg</td></tr>`;
+  }).join('');
+  setHTML('cr-inv', invRows||`<tr><td colspan="3" class="muted">${lang==='zh'?'暂无原料库存':'No raw stock'}</td></tr>`);
+  const list=records.filter(r=>r.ty==='Crush'&&(fac==='ALL'||r.factory===fac)).sort((a,b)=>String(b.dt||'').localeCompare(String(a.dt||'')));
+  if(!list.length){setHTML('cr-list',`<tr><td colspan="10" class="muted">${lang==='zh'?'暂无破碎记录':'No crushing records'}</td></tr>`);return;}
+  let html='';
+  list.forEach(r=>{
+    (r.items||[]).forEach((it,i)=>{
+      const inW=Number(it.inW||0), outW=Number(it.outW||0), loss=Math.max(0,inW-outW);
+      const pct=inW>0?(loss/inW*100).toFixed(1):'0.0';
+      const head=(i===0);
+      html+=`<tr><td class="${head?'link':''}" ${head?('data-stop="1" '+act('viewRecord',r.id)):''}>${head?esc(r.dt):''}</td><td>${head?esc(r.batch||''):''}</td><td>${head?esc(r.shift||''):''}</td><td>${esc(crusherName(it.machine))}</td><td><b>${esc(it.m)}</b></td><td class="num">${Math.round(inW).toLocaleString()}</td><td class="num">${Math.round(outW).toLocaleString()}</td><td class="num">${Math.round(loss).toLocaleString()} <span class="muted">(${pct}%)</span></td><td>${head?esc(r.op||''):''}</td><td>${head?`<span class="link" data-stop="1" ${act('editCrush',r.id)}>${t('edit')}</span> · <span class="link u-danger" data-stop="1" ${act('deleteCrush',r.id)}>${t('delete')}</span>`:''}</td></tr>`;
+    });
+  });
+  setHTML('cr-list', html);
+}
 function addProduceRow(o){
   o=o||{};
   const m0=o.m||productMaterials()[0]||'PP', c0=o.c||productColors(m0)[0]||'', mac0=o.machine||'P1', bags0=(o.bags!=null)?o.bags:40;
@@ -3159,10 +3405,36 @@ function addProduceRow(o){
     <td><select class="pr-m">${productMaterials().map(m=>`<option ${m===m0?'selected':''}>${esc(m)}</option>`).join('')}</select></td>
     <td><select class="pr-c">${productColorOptions(m0,c0)}</select></td>
     <td><input class="pr-w u-w90" type="number" value="${bags0}" min="0"/> <span class="muted">${unitBag()}</span></td>
-    <td><button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','removeRowThen',[""])}>✕</button></td>`;
+    <td><button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','removeRowThen',["prFragHint"])}>✕</button></td>`;
   const m=tr.querySelector('.pr-m'), c=tr.querySelector('.pr-c');
-  m.addEventListener('change',()=>{c.innerHTML=productColorOptions(m.value,c.value);});
+  m.addEventListener('change',()=>{c.innerHTML=productColorOptions(m.value,c.value);prFragHint();});
+  const wEl=tr.querySelector('.pr-w'); if(wEl)wEl.addEventListener('input',prFragHint);
   document.getElementById('pr-body').appendChild(tr);
+  prFragHint();
+}
+/* 造粒耗料预警：按得率反推需要多少破碎料，与当前可用量逐材质比对。
+   造粒保存后会扣减破碎料，料不够就会形成负库存——与其事后发现，不如录入时就提示。 */
+function prFragHint(){
+  const box=document.getElementById('pr-frag-hint');if(!box)return;
+  const byMat={};
+  document.querySelectorAll('#pr-body tr').forEach(tr=>{
+    const w=tr.querySelector('.pr-w'), m=tr.querySelector('.pr-m');
+    if(!w||!m)return;
+    const outW=Math.max(0,Number(w.value)||0)*BAG_KG;
+    if(outW<=0)return;
+    byMat[m.value]=(byMat[m.value]||0)+outW;
+  });
+  const keys=Object.keys(byMat);
+  if(!keys.length){box.innerHTML='';return;}
+  const avail=rawAvailMap();
+  let anyShort=false;
+  const parts=keys.map(m=>{
+    const need=+(byMat[m]/PELLET_YIELD).toFixed(1);
+    const av=Math.round(avail[m+'|破碎料']||0);
+    const short=need>av; if(short)anyShort=true;
+    return `<span class="${short?'u-danger':''}">${esc(m)} ${t('pr_frag_need')} ${Math.round(need).toLocaleString()}kg / ${t('pr_frag_avail')} ${av.toLocaleString()}kg</span>`;
+  });
+  box.innerHTML=`<span class="muted">${t('produce_yield')} ${Math.round(PELLET_YIELD*100)}% · </span>`+parts.join(' · ')+(anyShort?` · <b class="u-danger">${t('pr_frag_short')}</b>`:'');
 }
 function resetProduce(){
   editingProduceId=null;
@@ -3208,7 +3480,6 @@ function saveProduce(){
       toast(lang==='zh'?`生产单 ${batch} 已保存`:`Produce ${batch} saved`);
     }
   }
-  purgeProduce(14); /* 造粒记录只保留最近 2 周 */
   settings.pending=(settings.pending||0)+1;
   saveState();refreshAfterSave();
   resetProduce();
@@ -3242,37 +3513,60 @@ function deleteProduce(id){
    每次进页面都静默写库）。现改为：显式写墓碑 + 由 runAutoPurge() 在数据加载/同步后按天节流调用。 */
 function purgeProduce(days){
   const cut=Date.now()-days*86400000;
-  const before=records.length;
-  const gone=records.filter(r=>r.ty==='Produce'&&(r.ts||0)<cut);
+  const gone=records.filter(r=>(r.ty==='Produce'||r.ty==='Crush')&&(r.ts||0)<cut);
   if(!gone.length)return 0;
-  records=records.filter(r=>!(r.ty==='Produce'&&(r.ts||0)<cut));
+  /* 关键：成品/原料库存由「业务记录回放」得出，删记录就等于删库存来源。
+     因此清理前必须把每条被删记录的业务贡献折算成库存偏移量（invAdjust / invAdjustRaw），
+     回放值少了多少、偏移就补多少，保证归档前后库存数字完全一致。
+     旧版直接删记录，正是「库存隔一阵子莫名变少」的根因。 */
+  gone.forEach(function(r){
+    (r.items||[]).forEach(function(it){
+      if(r.ty==='Produce'){
+        const outW=Number(it.outW||0);
+        if(outW<=0)return;
+        const pk=it.m+'|'+(it.c||'');
+        invAdjust[pk]=(invAdjust[pk]||0)+Math.round(outW/BAG_KG);
+        const fk=it.m+'|破碎料';
+        invAdjustRaw[fk]=(invAdjustRaw[fk]||0)-(+(outW/PELLET_YIELD).toFixed(1));
+      }else{
+        const inW=Number(it.inW||0);
+        const outW=(it.outW!=null&&it.outW!=='')?Number(it.outW):+(inW*(1-CRUSH_LOSS)).toFixed(1);
+        if(inW>0){ const bk=it.m+'|大料'; invAdjustRaw[bk]=(invAdjustRaw[bk]||0)-inW; }
+        if(outW>0){ const fk=it.m+'|破碎料'; invAdjustRaw[fk]=(invAdjustRaw[fk]||0)+outW; }
+      }
+    });
+  });
+  const goneIds={}; gone.forEach(function(r){ goneIds[String(r.id)]=1; });
+  records=records.filter(r=>!goneIds[String(r.id)]);
   gone.forEach(function(r){ addTomb(r.id, currentRole); });
   settings.pending=(settings.pending||0)+1;
-  auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:'Produce x'+gone.length,detail:(lang==='zh'?'自动清理 ':'auto purge ')+days+(lang==='zh'?' 天前造粒记录':'d-old produce')});
+  auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_delete',target:'Produce x'+gone.length,detail:(lang==='zh'?'归档 ':'archived ')+days+(lang==='zh'?' 天前生产记录（库存已折算保留）':'d-old production, stock folded')});
   saveState();
   return gone.length;
 }
-/* 每天只跑一次自动清理，避免每次渲染重复扫描全表 */
+/* 不再自动清理生产记录：库存回放依赖全量业务记录，按天清删会让库存口径漂移。
+   历史记录全量保留（列表侧已有日期分组折叠，量再大也不影响渲染性能）。
+   需要瘦身时由用户在设置里手动触发 purgeProduce()，它会把库存折算后再归档。 */
 function runAutoPurge(){
   try{
     const today=(new Date()).toISOString().slice(0,10);
     if(settings.lastPurgeDay===today)return 0;
     settings.lastPurgeDay=today;
-    return purgeProduce(14);
+    return 0;
   }catch(e){ return 0; }
 }
 function renderProduce(){
-  const fac=effectiveFactory();
+  const fac=prodScope();
   const sh=document.getElementById('pr-shift');if(sh&&!sh.options.length)sh.innerHTML=shiftOptions('白班');
   if(!editingProduceId && !document.querySelectorAll('#pr-body tr').length)addProduceRow();
   const pel=pelletStockMap(fac);
   const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(pel[k]||0).toLocaleString()} <span class="muted">${unitBag()}</span></td></tr>`;}).join('');
   setHTML('pr-inv', invRows||`<tr><td colspan="3" class="muted">—</td></tr>`);
-  const list=records.filter(r=>r.ty==='Produce'&&(fac==='Sagamu'||r.factory===fac));
+  const list=records.filter(r=>r.ty==='Produce'&&(fac==='ALL'||r.factory===fac));
   const byDate={};
   list.forEach(r=>(byDate[r.dt]=byDate[r.dt]||[]).push(r));
   const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
-  if(!dates.length){ setHTML('pr-list',`<tr><td colspan="9" class="muted">${lang==='zh'?'暂无记录':'No records'}</td></tr>`); return; }
+  if(!dates.length){ setHTML('pr-list',`<tr><td colspan="9" class="muted">${lang==='zh'?'暂无记录':'No records'}</td></tr>`); prFragHint(); return; }
   let rows='';
   dates.forEach(dt=>{
     const recs=byDate[dt];
@@ -3289,6 +3583,7 @@ function renderProduce(){
     }
   });
   setHTML('pr-list', rows);
+  prFragHint();
 }
 function toggleProdDate(dt){ expandedProdDates[dt]=!expandedProdDates[dt]; renderProduce(); }
 
@@ -3316,9 +3611,10 @@ function sellRecalc(){
   let tot=0;
   const cur='NGN';
   const sym=curSymbol();
+  const pel=pelletAvailMap();
   document.querySelectorAll('#sl-body tr').forEach(tr=>{
     const m=tr.querySelector('.sl-m').value,c=tr.querySelector('.sl-c').value,bags=Math.max(0,Math.floor(+tr.querySelector('.sl-w').value||0)),p=+tr.querySelector('.sl-p').value||0;
-    const avail=availFor(m,c);
+    const avail=availFor(m,c,pel);
     const av=tr.querySelector('.sl-avail');if(av)av.textContent=Math.round(avail/BAG_KG).toLocaleString()+' '+unitBag();
     const am=tr.querySelector('.sl-amt');if(am)am.textContent=sym+((bags*BAG_KG)*p).toLocaleString();
     tot+=(bags*BAG_KG)*p;
@@ -3335,7 +3631,20 @@ function resetSell(){
   document.getElementById('sl-order').value='SO-'+nextBatchNum('SO-');
   sellRecalc();
 }
-function availFor(m,c){const pel=pelletStockMap(effectiveFactory());return Math.max(0,(pel[`${m}|${c}`]||0)*BAG_KG);}
+/* 成品可用库存快照：一次回放、逐行复用（sellRecalc / saveSell 共用同一张表）。
+   两处修正：
+   ① 旧版 availFor 每行都重跑一次全量业务回放，明细行数一多就 O(n²) 卡顿；
+   ② 编辑旧单时，本单已出库的数量会被回放扣掉，必须回加后再比对，
+      否则改单时必然误报「库存不足」。 */
+function pelletAvailMap(){
+  const pel=pelletStockMap(effectiveFactory());
+  if(editingSellId){
+    const cur=records.find(function(r){return String(r.id)===String(editingSellId)&&r.ty==='Sale';});
+    if(cur)(cur.items||[]).forEach(function(it){const k=it.m+'|'+(it.c||'');pel[k]=(pel[k]||0)+(+it.bags||0);});
+  }
+  return pel;
+}
+function availFor(m,c,pel){const p=pel||pelletStockMap(effectiveFactory());return Math.max(0,(p[`${m}|${c}`]||0)*BAG_KG);}
 function saveSell(){
   if(!can('sell')){toast(lang==='zh'?'无销售权限':'No sell permission');return;}
   if(!isHQorAllFactory()){toast(lang==='zh'?'分厂不开放成品出售':'Branch cannot sell finished goods');return;}
@@ -3344,12 +3653,13 @@ function saveSell(){
   const date=document.getElementById('sl-date').value;
   const fac=effectiveFactory();
   const items=[];let tot=0;
+  const pel=pelletAvailMap();
   document.querySelectorAll('#sl-body tr').forEach(tr=>{
     const m=tr.querySelector('.sl-m').value, c=tr.querySelector('.sl-c').value, bags=Math.max(0,Math.floor(+tr.querySelector('.sl-w').value||0)), p=+tr.querySelector('.sl-p').value||0;
     if(bags<=0)return;
-    const avail=availFor(m,c);
-    if(bags*25>avail){toast(lang==='zh'?`${m} ${colorLabel(c)} 成品库存不足（可用 ${Math.round(avail/BAG_KG)} ${unitBag()}）`:`${m} ${c} insufficient (${Math.round(avail/BAG_KG)} ${unitBag()})`);return;}
-    items.push({m,f:'粒子',c,bags,w:bags*25,p});tot+=bags*25*p;
+    const avail=availFor(m,c,pel);
+    if(bags*BAG_KG>avail){toast(lang==='zh'?`${m} ${colorLabel(c)} 成品库存不足（可用 ${Math.round(avail/BAG_KG)} ${unitBag()}）`:`${m} ${c} insufficient (${Math.round(avail/BAG_KG)} ${unitBag()})`);return;}
+    items.push({m,f:'粒子',c,bags,w:bags*BAG_KG,p});tot+=bags*BAG_KG*p;
   });
   if(!items.length){toast(lang==='zh'?'请至少录入一行且不超过库存':'Add a valid line within stock');return;}
   if(editingSellId){
@@ -3397,11 +3707,11 @@ function deleteSell(id){
   toast(lang==='zh'?'已删除出售单':'Sale deleted');
 }
 function renderSell(){
-  const fac=effectiveFactory();
+  const fac=prodScope();
   const pel=pelletStockMap(fac);
   const invRows=Object.keys(pel).filter(k=>pel[k]>0.0001).sort().map(k=>{const [m,c]=k.split('|');return `<tr><td><b>${m}</b></td><td>${c?esc(colorLabel(c)):'—'}</td><td class="num">${Math.round(pel[k]||0).toLocaleString()} ${unitBag()}</td></tr>`;}).join('');
   setHTML('sl-inv', invRows||`<tr><td colspan="3" class="muted">—</td></tr>`);
-  const list=records.filter(r=>r.ty==='Sale'&&(fac==='Sagamu'||r.factory===fac));
+  const list=records.filter(r=>r.ty==='Sale'&&(fac==='ALL'||r.factory===fac));
   const rev=list.reduce((s,r)=>s+r.ta,0);
   setHTML('sl-rev', (lang==='zh'?'累计销售 ':'Revenue ')+fmtCur(rev));
   let rows='';
@@ -3412,24 +3722,24 @@ function renderSell(){
 /* ===== Inventory ===== */
 /* 原料库存自由编辑：覆盖材质/形态/重量（老板），便于修正回放口径与标签 */
 function editRawInv(key,field,val){
-  if(currentRole!=='boss')return;
+  if(!isTopRole())return;
   const ov=invRawEdit[key]||{};
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='f')ov.f=String(val||'').trim();
   else if(field==='w'){ ov.w=Math.max(0,Math.round(Number(val)||0)); if(invAdjustRaw[key]!=null)delete invAdjustRaw[key]; /* 绝对重量覆盖相对校正，避免随后改 m/f 时把 +入库 偏移加回来 */ }
-  if(ov.w==null){ const comp=flattenRaw(computeInventory(effectiveFactory())); const b=Math.round(Number(comp[key]||0)); ov.w=Number(b)+Number(invAdjustRaw[key]||0); }
+  if(ov.w==null){ const comp=flattenRaw(computeInventory(prodScope())); const b=Math.round(Number(comp[key]||0)); ov.w=Number(b)+Number(invAdjustRaw[key]||0); }
   ov.w=Number(ov.w)||0;
   invRawEdit[key]=ov;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
 }
 /* 成品库存自由编辑：覆盖材质/颜色/袋数（老板） */
 function editPelletInv(key,field,val){
-  if(currentRole!=='boss')return;
+  if(!isTopRole())return;
   if(field==='bags'){
     /* 相对校正模型：成品袋数 = 造粒产出 − 出售 + 手动差额； Manual 差额写入 invAdjust[key]（与「成品入库」表单同通道）。
        这样手动改袋数既保留与造粒的联动（造粒变动 → 库存随之变），又让同材质累加生效——
        旧版的绝对覆盖会冲掉相对校正且脱离造粒源，正是「改袋数后不联动 / 加相同材质无反应」的根因。 */
-    const baseB=Math.round(Number(flattenPellet(computeInventory(effectiveFactory()))[key]||0)/BAG_KG);
+    const baseB=Math.round(Number(flattenPellet(computeInventory(prodScope()))[key]||0)/BAG_KG);
     invAdjust[key]=Math.max(0,Math.round(Number(val)||0)-baseB);
     clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
     toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
@@ -3449,7 +3759,7 @@ function foldPelletEditBags(){
   for(const k in invPelletEdit){
     const ov=invPelletEdit[k];
     if(ov&&ov.bags!=null){
-      const baseB=Math.round(Number(flattenPellet(computeInventory(effectiveFactory()))[k]||0)/BAG_KG);
+      const baseB=Math.round(Number(flattenPellet(computeInventory(prodScope()))[k]||0)/BAG_KG);
       invAdjust[k]=(invAdjust[k]||0)+(Number(ov.bags)||0)-baseB;
       delete ov.bags;
       if(Object.keys(ov).length===0)delete invPelletEdit[k];
@@ -3457,7 +3767,7 @@ function foldPelletEditBags(){
   }
 }
 function renderInventory(){
-  const fac=effectiveFactory();
+  const fac=prodScope();
   const inv=computeInventory(fac);
   const fr=flattenRaw(inv);
   const rawDel=invDeleted.raw||{};
@@ -3874,7 +4184,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01h';
+const APP_BUILD='2026-09-03a';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4464,27 +4774,19 @@ let currentView='dashboard';
 function go(view){
   currentView=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const el=document.getElementById('view-'+view);if(!el)return;el.classList.add('active');
+  const el=document.getElementById('view-'+view);
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.view===view||(view==='custdetail'&&a.dataset.view==='customers')));
-  document.getElementById('page-title').textContent=t(titles[view]||'nav_dashboard');
+  const pt=document.getElementById('page-title');if(pt)pt.textContent=t(titles[view]||'nav_dashboard');
+  if(el)el.classList.add('active');
   if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)closeSidebar();
-  if(view==='produce')renderProduce();
-  else if(view==='sell')renderSell();
-  else if(view==='receiving')renderReceiveList();
-  else if(view==='logistics')renderLogistics();
-  else if(view==='inventory')renderInventory();
-  else if(view==='shipping'){renderShipRows();renderShipList();}
-  else if(view==='reports')setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));
-  else if(view==='settings'){ try{renderAccounts();}catch(e){console.error('renderAccounts',e);} renderSettingsTabs(); }
-  else if(view==='search')initSearchDates();
-  else if(view==='finance')renderFinance();
-  else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
+  renderView(view);
 }
 /* 单视图渲染：go() 与 refreshAfterSave() 共用同一份映射，避免两处 switch 各自走样 */
 function renderView(view){
   if(!view)return;
   currentView=view;
-  if(view==='produce')renderProduce();
+  if(view==='crush')renderCrush();
+  else if(view==='produce')renderProduce();
   else if(view==='sell')renderSell();
   else if(view==='receiving')renderReceiveList();
   else if(view==='logistics')renderLogistics();
@@ -4495,6 +4797,7 @@ function renderView(view){
   else if(view==='search'){initSearchDates();runSearch();}
   else if(view==='finance')renderFinance();
   else if(view==='dashboard'){ recomputeDashboard(); drawDashboardCharts(); renderToday(); }
+  else if(view==='today')renderToday();
   else if(view==='customers')renderCustomers();
   else if(view==='pricing')renderPricing();
   else if(view==='custdetail'){ if(typeof currentCustId!=='undefined'&&currentCustId)openCustomer(currentCustId); }
@@ -4509,7 +4812,7 @@ function initSearchDates(){
     const from=document.getElementById('s-from'); if(from && !from.value) from.value=lastNDays(180);
   }catch(e){}
 }
-function renderAll(){renderCustomers();renderPricing();runSearch();runChurn();renderToday();renderShipRows();renderProduce();renderSell();renderReceiveList();renderLogistics();renderInventory();renderFinance();recomputeDashboard();drawDashboardCharts();renderAudit();updateSyncUI();renderLan();setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));}
+function renderAll(){renderCustomers();renderPricing();runSearch();runChurn();renderToday();renderShipRows();renderCrush();renderProduce();renderSell();renderReceiveList();renderLogistics();renderInventory();renderFinance();recomputeDashboard();drawDashboardCharts();renderAudit();updateSyncUI();renderLan();setPeriod(currentPeriod,document.querySelector('#rep-seg .active'));}
 /* 按需刷新：原来一次保存要重绘 11 个视图（全部 DOM 重建），录入高峰期明显卡顿。
    现在只重算顶栏统计 + 重绘「当前所在视图」+ 审计日志（条数少且属合规留痕，必须及时）。
    其余视图在切过去时由 go() 自然重绘，功能不丢。 */
