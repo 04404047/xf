@@ -425,6 +425,7 @@
       </div>
       <span class="role-badge" id="role-badge" data-page-node-id="Wr4ZGmFTInQWnICJkTT1I2">—</span>
       <div class="avatar" id="avatar" data-page-node-id="kZve0qsK3hgO1fQRYDPXRf">?</div>
+      <button type="button" class="btn ghost sm" id="btn-chgpw" data-act="openSelfChangePwd" data-args="[]" style="display:none" data-i18n="pwd_change_btn" data-page-node-id="Zq3wKc8mPv6nTx2sHz9bLy4">改密</button>
       <button type="button" class="btn ghost sm" id="btn-logout" data-act="logout" data-args="[]" style="display:none" data-i18n="liLogout" data-page-node-id="GC7kE66GFCwryzSKTs6SAS">退出</button>
     </header>
     <div class="content" data-page-node-id="Hc1v835MOXSIlhImrGg6hO">
@@ -1155,15 +1156,18 @@
 </div>
 
 <!-- ===================== Force password change ===================== -->
-<div id="pwd-modal" class="modal hidden" data-page-node-id="GjAmWLf19eaTvyIQakmej3">
+<div id="pwd-modal" class="modal hidden" data-noclose="1" data-page-node-id="GjAmWLf19eaTvyIQakmej3">
   <div class="modal-card" data-page-node-id="hyicnv7qMydlsj6xvaq7sH">
-    <div class="panel-head" data-page-node-id="XrgtxRGDRAAbLj8RJW1GRZ"><h3 data-i18n="pwd_title" data-page-node-id="F0x2L3FyxqrTWIAbzJC2uu">首次登录 · 请设置新密码</h3></div>
+    <div class="panel-head" data-page-node-id="XrgtxRGDRAAbLj8RJW1GRZ"><h3 id="pwd-title" data-i18n="pwd_title" data-page-node-id="F0x2L3FyxqrTWIAbzJC2uu">首次登录 · 请设置新密码</h3>
+      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" id="pwd-close" data-act="closePwdModal" data-args="[]" style="display:none" data-page-node-id="Rk4dPw2mQz7hNc9vTbXsLw1">✕</button></div>
     <div class="panel-body" data-page-node-id="hTIqpKv0rT5ny4MCwxDWDU">
-      <div class="field" data-page-node-id="blP6TG1Lze6wuxxCZKWPLV"><label for="pwd-new" data-i18n="pwd_new" data-page-node-id="fUwALqmRkN97ZM6Wixj5Kc">新密码（≥12位，含大小写与数字）</label><input id="pwd-new" type="password" data-page-node-id="j6aSYpZsD4RT85ixsRitAL"/></div>
-      <div class="field" data-page-node-id="XQotA7Pe7i4G2zGwT6VQNB"><label for="pwd-confirm" data-i18n="pwd_confirm" data-page-node-id="NQzNbFBVy98L062nmoHBPj">确认新密码</label><input id="pwd-confirm" type="password" data-act-keydown="submitForceChange" data-args-keydown="[]" data-key="Enter" data-page-node-id="Hz0PIHdqbAFulc8EZxhjcb"/></div>
+      <div class="field" id="pwd-old-wrap" style="display:none" data-page-node-id="Qm7bVc3nXz9pLk4sRd2wTy6"><label for="pwd-old" data-i18n="pwd_old" data-page-node-id="Ws5jHg8fBn1qZx6rTe3mUv9">当前密码</label><input id="pwd-old" type="password" autocomplete="current-password" placeholder="请输入当前密码" data-page-node-id="Kp2nLd7xCv4bNm9qYs6wZa3"/></div>
+      <div class="field" data-page-node-id="blP6TG1Lze6wuxxCZKWPLV"><label for="pwd-new" data-i18n="pwd_new" data-page-node-id="fUwALqmRkN97ZM6Wixj5Kc">新密码（≥8位，含字母与数字）</label><input id="pwd-new" type="password" autocomplete="new-password" data-page-node-id="j6aSYpZsD4RT85ixsRitAL"/></div>
+      <div class="field" data-page-node-id="XQotA7Pe7i4G2zGwT6VQNB"><label for="pwd-confirm" data-i18n="pwd_confirm" data-page-node-id="NQzNbFBVy98L062nmoHBPj">确认新密码</label><input id="pwd-confirm" type="password" autocomplete="new-password" data-act-keydown="submitForceChange" data-args-keydown="[]" data-key="Enter" data-page-node-id="Hz0PIHdqbAFulc8EZxhjcb"/></div>
       <div class="li-err" id="pwd-err" data-page-node-id="1Zp7ezLoJVLvoZ9TQitPGG"></div>
       <div class="row mt u-end8" data-page-node-id="yHGhUOVkkK71CtxLKd4CCu">
         <button type="button" class="btn eco" data-act="submitForceChange" data-args="[]" data-i18n="pwd_ok" data-page-node-id="5ZHbbpDubMAceSH2f7kf6a">确定</button>
+        <button type="button" class="btn ghost" id="pwd-cancel" data-act="closePwdModal" data-args="[]" style="display:none" data-i18n="btn_close" data-page-node-id="Fh8vNq5tRw2yLb7mXd4sPc6">关闭</button>
       </div>
     </div>
   </div>
@@ -1206,7 +1210,7 @@ const I18N = {
     r_trend:"回收 vs 出入 趋势", r_trend_hq:"回收 vs 入库 趋势", r_trend_br:"回收 vs 配送 趋势", r_by_mat:"按材质（kg）", r_by_form:"按形态",
     rk_recv:"回收量", rk_ship:"配送量", rk_inbound:"入库量", rk_amt:"金额", rk_diff:"差额(含损耗)",
     r_note:"差额 = 回收量 − 配送/入库量 − 造粒原料消耗 − 破碎损耗（大料→破碎料转换损耗约 8%）。环保合规导出含物料量与供货方登记，对接环保登记库。",
-    set_roles:"角色与权限", set_sync:"同步与离线", set_backup:"备份", set_audit:"审计日志", set_local:"本地化", set_accounts:"账号管理", acct_new:"新增 / 注册账号", acct_username:"账号(邮箱)", acct_name:"姓名", acct_role:"角色", acct_factories:"所属工厂", acct_password:"登录密码", acct_save:"保存账号", acct_delete:"删除账号", acct_genpw:"自动生成密码", acct_reset:"数据归零", reset_title:"归零全部业务数据", register:"注册新账号", reg_note:"提交后将生成本地账号（需老板审核启用）", au_clear_all:"清空",
+    set_roles:"角色与权限", set_sync:"同步与离线", set_backup:"备份", set_audit:"审计日志", set_local:"本地化", set_accounts:"账号管理", acct_new:"新增 / 注册账号", acct_username:"账号(邮箱)", acct_name:"姓名", acct_role:"角色", acct_factories:"所属工厂", acct_password:"登录密码", acct_save:"保存账号", acct_delete:"删除账号", acct_genpw:"自动生成密码", acct_reset:"数据归零", reset_title:"归零全部业务数据", register:"注册新账号", reg_note:"提交后将生成本地账号（需老板审核启用）", acct_selfreg_note:"当前账号无建号权限：账号由老板 / 管理员在「设置 → 账号管理」统一创建并分配初始密码。", au_clear_all:"清空",
     set_role_col:"角色", set_audit_col:"审计",
     role_owner_s:"厂长 / 老板", role_receiving_s:"回收员", role_shipping_s:"配送员", role_auditor_s:"审计员",
     sync_now:"立即同步", sy_conn:"连接", sy_online:"在线（4G）", sy_local:"本地库", sy_pending:"待上传", sy_last:"最近同步", sy_conflict:"冲突策略", sy_lww:"末写优先 + 版本向量", sy_nokey:"同步未加密",
@@ -1237,7 +1241,7 @@ const I18N = {
     ocr_code:"代码(如 PP.l)", ocr_parsed:"解析(材质/颜色)", ocr_codehint:"票据按「材质.颜色代码」分行（如 PP.l=透明、PP.b=黑色、PP.c=单色；总重为过磅总重，按卸货种类分行）。系统自动解析为回收单行，请核对。",
     ac_cust:"客户",
     repLabels:{day:["周一","周二","周三","周四","周五","周六","周日"],month:["3月","4月","5月","6月","7月","8月"],quarter:["Q1","Q2","Q3","Q4"],year:["2023","2024","2025","2026*"]},
-    liFactory:"工厂 / Plant", login_bad:"账号或密码错误", login_badfac:"您无权进入该工厂", pwd_title:"首次登录 · 请设置新密码", pwd_new:"新密码（可设置简单密码）", pwd_confirm:"确认新密码", pwd_weak:"请输入新密码", pwd_mismatch:"两次输入的密码不一致", pwd_ok:"确定", liLogout:"退出", opic_bulk_only:"OPIC工厂仅接收大料，不可接收破碎料",
+    liFactory:"工厂 / Plant", login_bad:"账号或密码错误", login_badfac:"您无权进入该工厂", pwd_title:"首次登录 · 请设置新密码", pwd_new:"新密码（可设置简单密码）", pwd_confirm:"确认新密码", pwd_weak:"请输入新密码", pwd_mismatch:"两次输入的密码不一致", pwd_ok:"确定", btn_close:"关闭", pwd_change_btn:"改密", pwd_old:"当前密码", pwd_change_title:"修改登录密码", pwd_changed:"密码已修改", pwd_old_wrong:"旧密码不正确", liLogout:"退出", opic_bulk_only:"OPIC工厂仅接收大料，不可接收破碎料",
     g_core:"核心业务", g_prod:"生产加工", g_logi:"物流协同",
     nav_crush:"破碎清洗", nav_produce:"生产造粒", nav_sell:"成品出售", nav_logistics:"物流协同", nav_inventory:"库存管理", nav_receiving:"回收分拣", nav_today:"当日回收", nav_shipping:"配送总厂",
     hero_title:"综合作业台", hero_sub:"本厂以废旧塑料回收加工为核心，覆盖回收、破碎、造粒与销售全流程",
@@ -1289,7 +1293,7 @@ const I18N = {
     r_trend:"Receive vs outbound trend", r_trend_hq:"Receive vs Inbound trend", r_trend_br:"Receive vs Ship trend", r_by_mat:"By material (kg)", r_by_form:"By form",
     rk_recv:"Received", rk_ship:"Shipped", rk_inbound:"Inbound", rk_amt:"Amount", rk_diff:"Difference (incl. loss)",
     r_note:"Difference = Received − Shipped/Inbound − pelletizing consumption − crushing loss (大料→破碎料 loss, ~8%). Eco-compliance export includes material volumes & supplier registry for the environmental registry.",
-    set_roles:"Roles & Permissions", set_sync:"Sync & Offline", set_backup:"Backup", set_audit:"Audit log", set_local:"Localization", set_accounts:"Account Management", acct_new:"New / Register Account", acct_username:"Account (email)", acct_name:"Name", acct_role:"Role", acct_factories:"Plants", acct_password:"Password", acct_save:"Save Account", acct_delete:"Delete Account", acct_genpw:"Auto-generate", acct_reset:"Reset All Business Data", reset_title:"Reset All Business Data", register:"Register Account", reg_note:"Submits a local account (boss approval to enable)", au_clear_all:"Clear",
+    set_roles:"Roles & Permissions", set_sync:"Sync & Offline", set_backup:"Backup", set_audit:"Audit log", set_local:"Localization", set_accounts:"Account Management", acct_new:"New / Register Account", acct_username:"Account (email)", acct_name:"Name", acct_role:"Role", acct_factories:"Plants", acct_password:"Password", acct_save:"Save Account", acct_delete:"Delete Account", acct_genpw:"Auto-generate", acct_reset:"Reset All Business Data", reset_title:"Reset All Business Data", register:"Register Account", reg_note:"Submits a local account (boss approval to enable)", acct_selfreg_note:"No permission to create accounts: the boss / admin creates accounts and assigns the initial password under Settings → Account Management.", au_clear_all:"Clear",
     set_role_col:"Role", set_audit_col:"Audit",
     role_owner_s:"Owner / Manager", role_receiving_s:"Recovery Clerk", role_shipping_s:"Dispatch Clerk", role_auditor_s:"Auditor",
     sync_now:"Sync now", sy_conn:"Connection", sy_online:"Online (4G)", sy_local:"Local DB", sy_pending:"Pending upload", sy_last:"Last sync", sy_conflict:"Conflict policy", sy_lww:"Last-write-wins + version vector", sy_nokey:"Sync unencrypted",
@@ -1319,7 +1323,7 @@ const I18N = {
     ocr_file:"Ticket image (camera / upload)", ocr_run:"Recognize", ocr_confirm:"Confirm & fill form", rc_ocr:"📷 Scan ticket",
     ocr_code:"Code (e.g. PP.l)", ocr_parsed:"Parsed (mat/color)", ocr_codehint:"Tickets list goods as 'material.colorcode' per line (e.g. PP.l=Clear, PP.b=Black, PP.c=Single; total = weighbridge weight, split by unloading category). Auto-parsed into recovery lines — please verify.",
     ac_cust:"Customer",
-    liFactory:"Plant", login_bad:"Wrong account or password", login_badfac:"You are not authorized for this plant", pwd_title:"First login — set a new password", pwd_new:"New password (simple passwords allowed)", pwd_confirm:"Confirm password", pwd_weak:"Please enter a new password", pwd_mismatch:"Passwords do not match", pwd_ok:"Confirm",     liLogout:"Logout", opic_bulk_only:"OPIC plant accepts bulk only — crushed material not allowed",
+    liFactory:"Plant", login_bad:"Wrong account or password", login_badfac:"You are not authorized for this plant", pwd_title:"First login — set a new password", pwd_new:"New password (simple passwords allowed)", pwd_confirm:"Confirm password", pwd_weak:"Please enter a new password", pwd_mismatch:"Passwords do not match", pwd_ok:"Confirm", btn_close:"Close", pwd_change_btn:"Change Pwd", pwd_old:"Current password", pwd_change_title:"Change Password", pwd_changed:"Password changed", pwd_old_wrong:"Current password is wrong", liLogout:"Logout", opic_bulk_only:"OPIC plant accepts bulk only — crushed material not allowed",
     g_core:"CORE", g_prod:"PRODUCTION", g_logi:"LOGISTICS",
     nav_crush:"Crushing", nav_produce:"Pelletizing", nav_sell:"Sales", nav_logistics:"Logistics", nav_inventory:"Inventory", nav_receiving:"Receiving", nav_today:"Today", nav_shipping:"Ship to HQ",
     hero_title:"Operations Console", hero_sub:"Plastic recovery & processing — receiving, crushing, pelletizing and sales.",
@@ -1619,6 +1623,22 @@ function bindActions(){
   });
 }
 bindActions();
+/* 弹窗关闭兜底：ESC 或点击遮罩关闭最上层弹窗。
+   踩过的坑：静态弹窗（账号/单据详情/公告）里的按钮曾误用模板占位 ${actOn(...)}，
+   而它们写在脚本块之外，浏览器不会插值，data-act 根本不存在 → 按钮全死、弹窗关不掉。
+   这层兜底不依赖任何具体按钮，保证「只要能打开就一定关得掉」。
+   标了 data-noclose 的弹窗（首次登录强制改密）不接受兜底关闭。 */
+const MODAL_CLOSE_FN={'acct-modal':'closeAcctModal','record-modal':'closeRecordModal','ann-modal':'closeAnnounceModal','pwd-modal':'closePwdModal'};
+function closeTopModal(){
+  const list=document.querySelectorAll('.modal'); let m=null;
+  for(let i=list.length-1;i>=0;i--){ if(!list[i].classList.contains('hidden')){ m=list[i]; break; } }
+  if(!m || m.getAttribute('data-noclose')) return;
+  const fn=MODAL_CLOSE_FN[m.id];
+  if(fn && typeof window[fn]==='function'){ window[fn](); return; }
+  m.classList.add('hidden');
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'||e.key==='Esc') closeTopModal(); },false);
+document.addEventListener('click',function(e){ const tg=e.target; if(tg&&tg.classList&&tg.classList.contains('modal')) closeTopModal(); },false);
 /* 内联事件里原本用「语句」直接干的活（.click() / window.print() / 整行 remove / 权限判断），
    收敛成具名函数后由委托分发——属性里只留函数名与参数，不再塞可执行代码。 */
 function clickEl(id){ const e=document.getElementById(id); if(e)e.click(); }
@@ -3854,7 +3874,7 @@ function setTab(t,btn){document.querySelectorAll('#set-tabs button').forEach(b=>
    不再依赖「默认隐藏 + 某处手动揭示」的脆弱模式，杜绝权限标签卡在隐藏态 */
 /* 构建标记：部署后打开「设置 → 同步与离线状态」，右上角会显示这个编号。
    排查「代码改了但线上没生效」的第一手段——编号对不上就说明 index.html 没传对。 */
-const APP_BUILD='2026-09-01g';
+const APP_BUILD='2026-09-01h';
 function renderSettingsTabs(){
   document.querySelectorAll('#set-tabs button[data-perm]').forEach(function(b){
     b.style.display = can(b.dataset.perm) ? '' : 'none';
@@ -4549,6 +4569,7 @@ function refreshAfterSync(){
 function refreshControls(){
   const show=(id,ok)=>{const e=document.getElementById(id);if(e)e.style.display=ok?'':'none';};
   show('btn-logout',!!currentUser);
+  show('btn-chgpw',!!currentUser);
   show('cust-new',can('customer.create'));
   show('rc-factory-wrap', isTopAllView());
   show('s-factory-wrap', isTopAllView());
@@ -4561,15 +4582,62 @@ function refreshControls(){
   const cmf=document.getElementById('cm-factory'), cmfr=document.getElementById('cm-factory-readonly');
   if(cmf&&cmfr){ if(isTopAllView()){cmf.style.display='';cmfr.textContent='';} else {cmf.style.display='none';const f=FACTORIES[currentFactory];cmfr.textContent=f?(f.name+' · '+f.loc):'—';} }
 }
-function openForceChange(){const m=document.getElementById('pwd-modal');if(m)m.classList.remove('hidden');}
+/* 改密弹窗两种模式：
+   force = 首次登录强制改密（不可关闭、免旧密码、改完重启应用）
+   self  = 用户主动改密（可关闭、需旧密码、改完留在当前页面） */
+let pwdChangeMode='force';
+function openForceChange(){ pwdChangeMode='force'; showPwdModal(); }
+function openSelfChangePwd(){
+  if(!currentUser){ toast(lang==='zh'?'请先登录':'Please sign in first'); return; }
+  pwdChangeMode='self'; showPwdModal();
+}
+function showPwdModal(){
+  const m=document.getElementById('pwd-modal'); if(!m)return;
+  const self=(pwdChangeMode==='self');
+  m.classList.remove('hidden');
+  /* 强制改密不可关闭，主动改密可以关——靠 data-noclose 交给 closeTopModal 兜底判定 */
+  if(self) m.removeAttribute('data-noclose'); else m.setAttribute('data-noclose','1');
+  const key=self?'pwd_change_title':'pwd_title';
+  const h=document.getElementById('pwd-title'); if(h){ h.setAttribute('data-i18n',key); h.textContent=t(key); }
+  const ow=document.getElementById('pwd-old-wrap'); if(ow)ow.style.display=(self&&!currentUser.mustChange)?'':'none';
+  const eo=document.getElementById('pwd-old'); if(eo)eo.value='';
+  const en=document.getElementById('pwd-new'); if(en)en.value='';
+  const ec=document.getElementById('pwd-confirm'); if(ec)ec.value='';
+  const er=document.getElementById('pwd-err'); if(er)er.textContent='';
+  ['pwd-close','pwd-cancel'].forEach(function(id){ const b=document.getElementById(id); if(b)b.style.display=self?'':'none'; });
+  const en2=document.getElementById('pwd-new'); if(en2&&en2.focus)en2.focus();
+}
+function closePwdModal(){
+  if(pwdChangeMode==='force'){ toast(lang==='zh'?'首次登录必须先设置新密码':'Please set a new password first'); return; }
+  const m=document.getElementById('pwd-modal'); if(m){m.classList.add('hidden');m.setAttribute('data-noclose','1');}
+  const er=document.getElementById('pwd-err'); if(er)er.textContent='';
+  const eo=document.getElementById('pwd-old'),en=document.getElementById('pwd-new'),ec=document.getElementById('pwd-confirm');
+  if(eo)eo.value=''; if(en)en.value=''; if(ec)ec.value='';
+}
 function submitForceChange(){
   const nw=document.getElementById('pwd-new').value, cf=document.getElementById('pwd-confirm').value, err=document.getElementById('pwd-err');
   if(!passwordStrong(nw)){err.textContent=t('pwd_weak');return;}
   if(nw!==cf){err.textContent=t('pwd_mismatch');return;}
+  /* 主动改密（非首次登录）时，本地兜底分支（断网 / 无 token）必须自己校验旧密码，
+     否则离线状态下任何人点开顶栏「改密」就能直接改掉当前账号密码。在线分支由服务端校验。 */
+  const needOld=(pwdChangeMode==='self'&&currentUser&&!currentUser.mustChange);
+  const eoChk=document.getElementById('pwd-old');
+  if(needOld && !verifyPassword((eoChk&&eoChk.value)||'', currentUser.salt, currentUser.passwordHash)){
+    err.textContent=t('pwd_old_wrong'); return;
+  }
   const done=()=>{
     currentUser.mustChange=false;
-    setSession(currentUser,currentFactory);err.textContent='';
-    const m=document.getElementById('pwd-modal');if(m)m.classList.add('hidden');
+    const m=document.getElementById('pwd-modal');if(m){m.classList.add('hidden');m.setAttribute('data-noclose','1');}
+    err.textContent='';
+    const eo=document.getElementById('pwd-old'),enw=document.getElementById('pwd-new'),ecf=document.getElementById('pwd-confirm');
+    if(eo)eo.value=''; if(enw)enw.value=''; if(ecf)ecf.value='';
+    if(pwdChangeMode==='self'){
+      /* 主动改密：不调用 enterApp()，否则用户会被踢回首页；凭据已由在线成功分支 / 离线回退分支各自刷新 */
+      saveState(); updateSyncUI(); syncPush();
+      toast(t('pwd_changed'));
+      return;
+    }
+    setSession(currentUser,currentFactory);
     enterApp();
   };
   /* 在线改密：服务端权威；mustChange 时免旧密码校验 */
@@ -4588,8 +4656,12 @@ function submitForceChange(){
       });
     return;
   }
-  /* 无 token：本地改密（离线兜底） */
-  currentUser.salt=genSalt();currentUser.passwordHash=hashPassword(nw,currentUser.salt); done();
+  /* 无 token：本地改密（离线兜底）——必须同步刷新本地离线凭据，否则下次离线登录仍在校验旧密码 */
+  currentUser.salt=genSalt();currentUser.passwordHash=hashPassword(nw,currentUser.salt);
+  currentUser.updatedTs=Date.now();settings.pending=(settings.pending||0)+1;
+  const c0=loadCreds(); if(c0){ c0.verifier=currentUser.salt+'$'+currentUser.passwordHash; c0.mustChange=false; saveCreds(c0); }
+  saveState();
+  done();
 }
 function logout(){
   authToken=null; clearCreds();
@@ -4614,8 +4686,13 @@ let editingAcct=null; /* 非空表示正在编辑已有账号（老板赋权） 
 function openAcctModal(presetUser){
   editingAcct = presetUser || null;
   const m=document.getElementById('acct-modal');if(m)m.classList.remove('hidden');
+  /* 标题随模式切换（新增 / 分配权限），避免编辑态仍显示「新增账号」误导 */
+  const ath=document.getElementById('ac-title'); if(ath){ const ak=editingAcct?'acct_grant':'acct_new'; ath.setAttribute('data-i18n',ak); ath.textContent=t(ak); }
   const fc=document.getElementById('ac-factories');if(fc)fc.innerHTML=ALL_FACTORY_IDS.map(f=>`<label class="chk"><input type="checkbox" value="${f}" checked/> ${FACTORIES[f]?FACTORIES[f].name:f}</label>`).join(' ');
   const msg=document.getElementById('ac-msg');if(msg)msg.textContent='';
+  /* 无建号权限时（例如从登录页点「注册新账号」进来）提前把说明写在弹窗里，
+     别让用户把表单填完才在保存时吃一记「无权限」——那看起来就和「点了没反应」一样。 */
+  if(msg && !(typeof can==='function' && can('account.manage'))) msg.textContent=t('acct_selfreg_note');
   const pw=document.getElementById('ac-pass');if(pw)pw.value=genPassword(16);
   if(editingAcct){
     const u=users.find(x=>x.username===editingAcct);
@@ -4628,7 +4705,10 @@ function openAcctModal(presetUser){
       if(msg)msg.textContent=lang==='zh'?'正在为「'+u.username+'」赋权：修改角色与工厂，密码留空则不变':'Granting perms to '+u.username;
     }
   } else {
+    /* 新增态：姓名与角色必须清干净，否则上一次「赋权」时选的角色会串到新账号上（默认给最小权限登记员） */
     const eu=document.getElementById('ac-user');if(eu){eu.value='';eu.readOnly=false;}
+    const enw=document.getElementById('ac-name');if(enw)enw.value='';
+    const erw=document.getElementById('ac-role');if(erw)erw.value='registrar';
   }
 }
 function loadAcct(username){ openAcctModal(username); }
@@ -4884,8 +4964,8 @@ function viewProduceDetail(id){
 <!-- ===================== Account modal ===================== -->
 <div id="acct-modal" class="modal hidden" data-page-node-id="aSlYKSf0CObCQMCLDkJEGv">
   <div class="modal-card" data-page-node-id="G7E33WkbT1arYRxRDL7x5J">
-    <div class="panel-head" data-page-node-id="wFT3aCLwKxWWzFnwTrJM10"><h3 data-i18n="acct_new" data-page-node-id="Ln4Y9grhJZzNeZAgghrFTE">新增 / 注册账号</h3>
-      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','closeAcctModal',[])} data-page-node-id="3ss4CQAeoih1vh9ev8S0Ve">✕</button></div>
+    <div class="panel-head" data-page-node-id="wFT3aCLwKxWWzFnwTrJM10"><h3 id="ac-title" data-i18n="acct_new" data-page-node-id="Ln4Y9grhJZzNeZAgghrFTE">新增 / 注册账号</h3>
+      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" data-act="closeAcctModal" data-args="[]" data-page-node-id="3ss4CQAeoih1vh9ev8S0Ve">✕</button></div>
     <div class="panel-body" data-page-node-id="TUsqqhfzE3WBnAgnZTMtB5">
       <div class="field" data-page-node-id="3VT2fu9wF9jg3jlbHaeFJ2"><label data-i18n="acct_username" data-page-node-id="xRXvYDzuLewYrO5AC5KCFt">账号</label><input id="ac-user" placeholder="工号 / 手机号 / 任意标识" data-page-node-id="YygxpRQUbC9OgHMSSYhksM"/></div>
       <div class="field" data-page-node-id="KYH6mlP2YGW5lxbbFw91Bu"><label data-i18n="acct_name" data-page-node-id="uRDQBxBcurViwHE53y3OK1">姓名</label><input id="ac-name" placeholder="张三" data-page-node-id="05ygt54g0OA09LRA3f1QZG"/></div>
@@ -4898,11 +4978,11 @@ function viewProduceDetail(id){
       </select></div>
       <div class="field" data-page-node-id="DwY28aoUo2BkTOzpAAb4k4"><label data-i18n="acct_factories" data-page-node-id="C0rUBUXTR8oYM6nusDS4WB">所属工厂</label><div id="ac-factories" class="row" data-page-node-id="OrpnMxHVpHVaYDsGBHzDxD"></div></div>
       <div class="field" data-page-node-id="COPdCRRuKGnZ7ubIB7B95t"><label data-i18n="acct_password" data-page-node-id="Jo7al1LUCv6ip51HWrfW0s">登录密码</label>
-        <div class="row" data-page-node-id="6LSM8s6M0TFXQByZQqZa2b"><input class="u-flex1" id="ac-pass" type="text" data-page-node-id="0SS0j1zAHVX7AqHLACstH6"/><button type="button" class="btn ghost sm" ${actOn('click','genPwdInto',["ac-pass"])} data-i18n="acct_genpw" data-page-node-id="YkJWccvJak0cz6L4IsMayz">自动生成</button></div>
+        <div class="row" data-page-node-id="6LSM8s6M0TFXQByZQqZa2b"><input class="u-flex1" id="ac-pass" type="text" data-page-node-id="0SS0j1zAHVX7AqHLACstH6"/><button type="button" class="btn ghost sm" data-act="genPwdInto" data-args='["ac-pass"]' data-i18n="acct_genpw" data-page-node-id="YkJWccvJak0cz6L4IsMayz">自动生成</button></div>
       </div>
       <div class="row" data-page-node-id="AeeKhqvdMAFuUreYQgF2xR">
-        <button type="button" class="btn eco" ${actOn('click','submitAcct',[])} data-i18n="acct_save" data-page-node-id="Mt7EvtkIlhvgkm9JIzE3fk">保存账号</button>
-        <button type="button" class="btn ghost" ${actOn('click','closeAcctModal',[])} data-page-node-id="j0WvmvazVi9iWjDXvs4CxV">关闭</button>
+        <button type="button" class="btn eco" data-act="submitAcct" data-args="[]" data-i18n="acct_save" data-page-node-id="Mt7EvtkIlhvgkm9JIzE3fk">保存账号</button>
+        <button type="button" class="btn ghost" data-act="closeAcctModal" data-args="[]" data-page-node-id="j0WvmvazVi9iWjDXvs4CxV">关闭</button>
       </div>
       <div class="small muted mt" id="ac-msg" data-page-node-id="ST5Szu38LtDf20p3HfV3an"></div>
     </div>
@@ -4913,7 +4993,7 @@ function viewProduceDetail(id){
 <div id="record-modal" class="modal hidden" data-page-node-id="8bT2NX8ZPj4DB6ezocqioz">
   <div class="modal-card" data-page-node-id="BRpECQCBHZnmy9b7oGM3DF">
     <div class="panel-head" data-page-node-id="0vzoO373AMsb5oZNqgQNvI"><h3 data-i18n="rec_detail" data-page-node-id="PiDtTj9Xd9WBDTBpIuucIU">单据详情</h3>
-      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','closeRecordModal',[])} data-page-node-id="eBfqQfoLj7Jt9oH9eAMIn3">✕</button></div>
+      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" data-act="closeRecordModal" data-args="[]" data-page-node-id="eBfqQfoLj7Jt9oH9eAMIn3">✕</button></div>
     <div class="panel-body" id="record-detail-body" data-page-node-id="9TO3mjzrlXKTZwi1MXBTEq"></div>
   </div>
 </div>
@@ -4922,13 +5002,13 @@ function viewProduceDetail(id){
 <div id="ann-modal" class="modal hidden" data-page-node-id="HV06hLeYe7ZXHFiKD6LsAW">
   <div class="modal-card" data-page-node-id="0TWjtcfVcd2uwj54j4hDch">
     <div class="panel-head" data-page-node-id="aAA3h45sLrEGFCAw7ffj89"><h3 data-i18n="ann_post" data-page-node-id="821fyqOvJsdxTnJWLNOtkH">发布公告</h3>
-      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" ${actOn('click','closeAnnounceModal',[])} data-page-node-id="XuMzsNM8eactCMC8VT9f9c">✕</button></div>
+      <button type="button" aria-label="关闭" data-i18n-aria="ariaClose" class="btn ghost sm" data-act="closeAnnounceModal" data-args="[]" data-page-node-id="XuMzsNM8eactCMC8VT9f9c">✕</button></div>
     <div class="panel-body" data-page-node-id="v2lsFykVCrYubloEdQ2pPA">
       <div class="field" data-page-node-id="2wlKFSdxJwmPXXj9BdjWlf"><label data-i18n="ann_title" data-page-node-id="ARvKOz4jSIphU9KuliZNFk">公告标题</label><input id="ann-title" placeholder="例如：国庆放假安排" data-page-node-id="e5SE51LLZR3rdIhLGCAgNe"/></div>
       <div class="field" data-page-node-id="XVKoGiN5iQYVn0oGNEH1SP"><label data-i18n="ann_body" data-page-node-id="O5b6ucXWaQaz1CDYxIsuJB">公告内容</label><textarea id="ann-body" rows="4" placeholder="请输入公告内容…（将置顶显示在首页）"></textarea></div>
       <div class="row" data-page-node-id="TEAqgYruGNjRCi7KJG960x">
-        <button type="button" class="btn eco" ${actOn('click','submitAnnounce',[])} data-i18n="ann_publish" data-page-node-id="AsJcWGCc96yPlJKPbcVCrT">发布</button>
-        <button type="button" class="btn ghost" ${actOn('click','closeAnnounceModal',[])} data-page-node-id="zT4Ga9Yrc7IAGYGgAqex1Q">关闭</button>
+        <button type="button" class="btn eco" data-act="submitAnnounce" data-args="[]" data-i18n="ann_publish" data-page-node-id="AsJcWGCc96yPlJKPbcVCrT">发布</button>
+        <button type="button" class="btn ghost" data-act="closeAnnounceModal" data-args="[]" data-page-node-id="zT4Ga9Yrc7IAGYGgAqex1Q">关闭</button>
       </div>
     </div>
   </div>
