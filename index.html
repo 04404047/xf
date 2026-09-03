@@ -1233,7 +1233,7 @@ const I18N = {
     lo_lang:"界面语言", lo_lang_opt_zh:"中文", lo_lang_opt_en:"English", lo_cur:"货币", lo_date_fmt:"日期格式", lo_num:"数字格式", lo_printer:"打印机 / 地磅", lo_save:"保存设置", lo_note:"语言切换即时生效；其余本地化参数随版本固化（人民币 ₦ / YYYY-MM-DD）。点击「保存设置」将偏好写入本地。",
     h_date:"日期", h_mat:"材质", h_form:"形态", h_color:"颜色", h_w:"重量", h_bags:"袋数", h_price:"单价 ₦", h_amt:"金额",
     cm_title_new:"新建客户", cm_title_edit:"编辑客户", cm_name:"姓名 *", cm_phone:"电话", cm_bank:"开户行", cm_acct:"账号", cm_addr:"地址", cm_note:"备注", cm_save:"保存", cm_cancel:"取消",
-    c_factory:"所属工厂", c_imprint:"重名印记", c_imprint_tip:"该客户名称与所列工厂已有客户重复，请跨厂核对",
+    c_factory:"所属工厂", c_imprint:"同卡印记", c_imprint_tip:"该客户银行卡号与所列工厂已有客户一致，请跨厂核对",
     fin_title:"财务记录", fin_income:"进项", fin_expense:"出项", fin_net:"净额", fin_daily:"每日收支统计", fin_date:"日期", fin_type:"类型", fin_cat:"类别", fin_amount:"金额(₦)", fin_note:"备注", fin_by:"经手人", fin_add:"＋ 新增财务记录", fin_link:"🔗 关联业务收支", fin_factory:"所属工厂", fin_auto:"自动关联", s_cost:"运费(₦)",
     g_core:"核心业务", g_data:"数据", g_sys:"系统",
     d_note_trend:"说明：蓝线为每日回收量、绿线为对应出库量（总厂为入库、分厂为配送，kg）。回收线持续高于出库线说明原料积压，应加快造粒出货；反之需补充货源。",
@@ -1314,7 +1314,7 @@ const I18N = {
     lo_lang:"UI language", lo_lang_opt_zh:"中文", lo_lang_opt_en:"English", lo_cur:"Currency", lo_date_fmt:"Date format", lo_num:"Number format", lo_printer:"Printer / weighbridge", lo_save:"Save settings", lo_note:"Language switch applies instantly; other localization params are fixed per build (China ₦ / YYYY-MM-DD). Click “Save settings” to persist preference locally.",
     h_date:"Date", h_mat:"Material", h_form:"Form", h_color:"Color", h_w:"Weight", h_bags:"Bags", h_price:"Unit ₦", h_amt:"Amount",
     cm_title_new:"New Customer", cm_title_edit:"Edit Customer", cm_name:"Name *", cm_phone:"Phone", cm_bank:"Bank", cm_acct:"Account", cm_addr:"Address", cm_note:"Remark", cm_save:"Save", cm_cancel:"Cancel",
-    c_factory:"Plant", c_imprint:"Dup imprint", c_imprint_tip:"This customer name duplicates one already registered in the listed plant(s); verify across plants",
+    c_factory:"Plant", c_imprint:"Same-card imprint", c_imprint_tip:"This customer's bank account matches one already registered in the listed plant(s); verify across plants",
     fin_title:"Finance Records", fin_income:"Income", fin_expense:"Expense", fin_net:"Net", fin_daily:"Daily Income/Expense", fin_date:"Date", fin_type:"Type", fin_cat:"Category", fin_amount:"Amount(₦)", fin_note:"Remark", fin_by:"By", fin_add:"＋ New Finance Entry", fin_link:"🔗 Link Business", fin_factory:"Plant", fin_auto:"Auto", s_cost:"Freight(₦)",
     g_core:"CORE", g_data:"DATA", g_sys:"SYSTEM",
     d_note_trend:"Note: blue = daily receiving, green = outbound (Inbound at HQ / Ship at branches, kg). If receiving stays above outbound, raw stock accumulates — push pelletizing; otherwise secure more supply.",
@@ -1750,10 +1750,10 @@ function productColorOptions(m,sel){return productColors(m).map(c=>`<option valu
 function machineOptions(sel){return MACHINES.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)}</option>`).join('');}
 function machineName(id){const m=MACHINES.find(x=>x.id===id);return m?m.name:id;}
 function shiftOptions(sel){return [['白班','白班'],['夜班','夜班']].map(([v,l])=>`<option value="${v}" ${sel===v?'selected':''}>${l}</option>`).join('');}
-function addProductColor(m,c){c=(c||'').trim();if(!m||!c)return false;if(!products[m])products[m]=[];if(!products[m].includes(c)){products[m].push(c);return true;}return false;}
-function removeProductColor(m,c){if(products[m]){products[m]=products[m].filter(x=>x!==c);if(!products[m].length)delete products[m];return true;}return false;}
-function addProductMaterial(m){m=(m||'').trim();if(!m)return false;if(!products[m]){products[m]=[];return true;}return false;}
-function removeProductMaterial(m){if(products[m]){delete products[m];return true;}return false;}
+function addProductColor(m,c){c=(c||'').trim();if(!m||!c)return false;if(!products[m])products[m]=[];if(!products[m].includes(c)){products[m].push(c);prodTouch(m);return true;}return false;}
+function removeProductColor(m,c){if(products[m]){products[m]=products[m].filter(x=>x!==c);if(!products[m].length)delete products[m];prodTouch(m);return true;}return false;}
+function addProductMaterial(m){m=(m||'').trim();if(!m)return false;if(!products[m]){products[m]=[];prodTouch(m);return true;}return false;}
+function removeProductMaterial(m){if(products[m]){delete products[m];prodTouch(m);return true;}return false;}
 
 function colorOptionsFor(material,form,sel){
   const list=MAT_COLOR[`${material}|${form}`]||MAT_COLOR['PP|大料'];
@@ -1914,6 +1914,16 @@ let invAdjustRaw = {}; // 原料库存校正（kg）：'材质|形态' -> 相对
 let invRawEdit = {}; // 原料库存自由编辑覆盖（老板）：'材质|形态' -> {m,f,w} 绝对有效值
 let invPelletEdit = {}; // 成品库存自由编辑覆盖（老板）：'材质|颜色' -> {m,c,bags} 绝对有效值
 let invDeleted = { raw:{}, pellet:{} }; // 库存删除墓碑：kind -> key -> 删除时间戳(ms)。防止本地删除后被同步拉取再次合并复活（跨设备一致）
+/* 库存覆盖层的键级 LWW 时间戳：kind -> key -> 最后写入时间(ms)（与 priceTsBy 同构）。
+   没有它，pull 时远端整表会无条件盖掉本地刚写入的值——「添加成品库存后自动同步，刚加的那条没了」的根因。
+   invAdjust 与 invPelletEdit 共用 pellet 桶、invAdjustRaw 与 invRawEdit 共用 raw 桶，
+   因为二者是同一个键的两种表述（相对校正 / 绝对覆盖），UI 上一次编辑只会写其中一个。 */
+let invTs = { raw:{}, pellet:{} };
+/* 产品目录键级 LWW 时间戳：材质 -> 最后修改时间(ms)。
+   产品目录此前是整表替换（远端非空就覆盖本地），本地新增的材质/颜色会被自动同步打回。 */
+let prodTs = {};
+function invTouch(kind,key){ if(!invTs[kind]||typeof invTs[kind]!=='object')invTs[kind]={}; invTs[kind][key]=Date.now(); }
+function prodTouch(m){ prodTs[m]=Date.now(); }
 const expandedRecDates = {};   // 回收单：已展开的日期（其余日期折叠为总结框）
 const expandedProdDates = {};  // 生产记录：已展开的日期
 /* 财务记录：三厂独立录入、老板可全局汇总。
@@ -1976,7 +1986,7 @@ let saveStateTimer=null; const SAVE_STATE_DEBOUNCE_MS=300;
 function flushSaveState(){
   if(saveStateTimer){clearTimeout(saveStateTimer);saveStateTimer=null;}
   if(Array.isArray(auditLog)&&auditLog.length>AUDIT_LOG_MAX)auditLog.length=AUDIT_LOG_MAX;
-  Store.set(STATE_KEY,{customers,priceBy,priceTsBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,invDeleted,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances,pendingTombs,pendingDelUsers,pendingDelCust,pendingDelFin});
+  Store.set(STATE_KEY,{customers,priceBy,priceTsBy,records,priceHist,auditLog,settings,users,companyName:COMPANY.name,products,prodTs,invAdjust,invAdjustRaw,invRawEdit,invPelletEdit,invDeleted,invTs,deletedGids,tombMeta,deletedUsers,deletedCustomers,finances,deletedFinances,pendingTombs,pendingDelUsers,pendingDelCust,pendingDelFin});
 }
 /* 防抖：一次业务操作常触发多次保存，每次都全量 stringify上千条记录会造成录入卡顿。
    300ms 内合并为一次；页面隐藏/卸载前强制落盘，绝不会因防抖丢数据。 */
@@ -2016,6 +2026,8 @@ function loadState(){
     ['Sagamu','OPIC','Ikeja'].forEach(f=>{ if(s.priceTsBy[f]&&typeof s.priceTsBy[f]==='object')priceTsBy[f]=Object.assign({},s.priceTsBy[f]); });
   }
   if(s.products&&typeof s.products==='object')products=s.products;
+  prodTs={};
+  if(s.prodTs&&typeof s.prodTs==='object')prodTs=Object.assign({},s.prodTs);
   if(Array.isArray(s.records)){records=s.records.map(r=>{if(r.id!=null)r.id=String(r.id);if(!r.items)r.items=[];if(!r.factory)r.factory='Sagamu';if(!r.ts)r.ts=Date.parse((r.dt||'2026-01-01')+'T00:00:00')||Date.now();if(!r.rev)r.rev=1;/* 全局奈拉结算迁移：历史 CNY 记录按入账时锁定的 fx 折算为 NGN，幂等（已转过的 currency 已为 NGN 不会二次折算） */if(r.currency==='CNY'){const _fx=(r.fx>0)?r.fx:230;(r.items||[]).forEach(function(it){it.p=(+it.p||0)*_fx;});r.currency='NGN';}recTotals(r);return r;});}
   if(Array.isArray(s.priceHist))priceHist=s.priceHist;
   if(Array.isArray(s.auditLog))auditLog=s.auditLog;
@@ -2024,7 +2036,21 @@ function loadState(){
   if(s.invAdjustRaw&&typeof s.invAdjustRaw==='object')invAdjustRaw=s.invAdjustRaw;
   if(s.invRawEdit&&typeof s.invRawEdit==='object')invRawEdit=s.invRawEdit;
   if(s.invPelletEdit&&typeof s.invPelletEdit==='object')invPelletEdit=s.invPelletEdit;
+  invTs={raw:{},pellet:{}};
+  if(s.invTs&&typeof s.invTs==='object'){ invTs={raw:(s.invTs.raw||{}),pellet:(s.invTs.pellet||{})}; }
   if(s.invDeleted&&typeof s.invDeleted==='object'){ invDeleted={raw:(s.invDeleted.raw||{}),pellet:(s.invDeleted.pellet||{})}; }
+  /* 存量数据迁移（幂等）：老版本没有任何时间戳。给每个既有键补 ts=1 —— 早于一切真实写入，
+     于是「本地有、服务端没有」不会被首次对齐误删；而任何一次真实的新写入（ts=now）都仍能覆盖它。 */
+  (function backfillInvTs(){
+    const pairs=[['raw',invAdjustRaw,invRawEdit],['pellet',invAdjust,invPelletEdit]];
+    pairs.forEach(function(p){
+      const kind=p[0], bucket=invTs[kind]||(invTs[kind]={});
+      [p[1],p[2]].forEach(function(m){
+        Object.keys(m||{}).forEach(function(k){ if(!bucket[k])bucket[k]=1; });
+      });
+    });
+    Object.keys(products||{}).forEach(function(m){ if(!prodTs[m])prodTs[m]=1; });
+  })();
   if(Array.isArray(s.deletedGids))deletedGids=s.deletedGids.slice();
   if(Array.isArray(s.deletedUsers))deletedUsers=s.deletedUsers.slice();
   if(Array.isArray(s.deletedCustomers))deletedCustomers=s.deletedCustomers.slice();
@@ -2042,14 +2068,22 @@ function loadState(){
   if(Array.isArray(s.pendingDelUsers)) pendingDelUsers=s.pendingDelUsers.slice(); else pendingDelUsers=deletedUsers.slice();
   if(Array.isArray(s.pendingDelCust)) pendingDelCust=s.pendingDelCust.slice(); else pendingDelCust=deletedCustomers.slice();
   if(Array.isArray(s.pendingDelFin)) pendingDelFin=s.pendingDelFin.slice(); else pendingDelFin=deletedFinances.slice();
-  /* 历史客户归属补录：缺工厂的默认归总厂；缺「重名印记」的按名称跨厂重算
-     （仅补充缺失、不覆盖已保存的印记，使历史同名客户也能显示跨厂核对标记）。 */
+  /* 历史客户归属补录：缺工厂的默认归总厂；缺「同卡印记」的按银行卡号跨厂重算
+     （仅补充缺失、不覆盖已保存的印记，使历史同卡号客户也能显示跨厂核对标记）。
+     判重依据已从姓名改为银行卡号：同名在回收行业极常见、误报太多，卡号才是唯一身份信号。 */
   if(Array.isArray(s.customers)){
-    const byNorm={};
-    customers.forEach(c=>{ if(!Array.isArray(c.imprints))c.imprints=[]; const n=normName(c.name); (byNorm[n]=byNorm[n]||[]).push(c); });
+    const byAcct={}, byNorm={};
+    customers.forEach(c=>{
+      if(!Array.isArray(c.imprints))c.imprints=[];
+      const a=normAcct(c.acct); if(a)(byAcct[a]=byAcct[a]||[]).push(c);
+      const n=normName(c.name); (byNorm[n]=byNorm[n]||[]).push(c);
+    });
     customers.forEach(c=>{
       if(c.imprints.length) return;
-      const dups=byNorm[normName(c.name)].filter(x=>x!==c && x.factory!==c.factory);
+      const a=normAcct(c.acct);
+      /* 有卡号按卡号判重；无卡号才退回姓名判重，避免现金供应商完全失去跨厂核对能力 */
+      const pool=a?(byAcct[a]||[]):(byNorm[normName(c.name)]||[]);
+      const dups=pool.filter(x=>x!==c && x.factory!==c.factory);
       if(dups.length) c.imprints=[...new Set(dups.map(x=>x.factory))];
     });
   }
@@ -2375,6 +2409,9 @@ function deleteCust(id){
   toast(lang==='zh'?'已删除客户':'Customer deleted');
 }
 function normName(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+/* 银行卡号归一化：去掉空格与分隔符，只留数字与字母并统一大写（录入习惯千差万别，
+   10 位卡号中间有没有空格必须判成同一个号）。 */
+function normAcct(s){return String(s||'').replace(/[\s\-]/g,'').toUpperCase();}
 function saveCustModal(){
   if(!can(currentCustId?'customer.edit':'customer.create')){toast(lang==='zh'?'无客户管理权限':'No customer permission');return;}
   const name=document.getElementById('cm-name').value.trim();
@@ -2382,22 +2419,41 @@ function saveCustModal(){
   const factory=effectiveFactory();
   if(!factory){const e=document.getElementById('cust-form-err');e.textContent=lang==='zh'?'请选择所属工厂':'Select a plant';e.classList.remove('hidden');return;}
   const acct=document.getElementById('cm-acct').value.trim();
-  if(acct){
-    const dup=customers.find(x=>x.acct===acct && x.id!==currentCustId && deletedCustomers.indexOf(x.id)<0);
-    if(dup){const e=document.getElementById('cust-form-err');e.textContent=lang==='zh'?`银行卡号 ${acct} 已存在于客户「${dup.name}」，请核对`:`Bank acct ${acct} already used by ${dup.name}`;e.classList.remove('hidden');return;}
+  const acctKey=normAcct(acct);
+  /* 银行卡号是本系统的客户唯一身份（同名在回收行业太常见，误报远高于价值）。
+     同一工厂内撞卡号 = 录入错误，硬拦截，避免同厂对账串户；
+     跨厂撞卡号 = 同一个供应商在多个工厂供货，属正常业务，提示后放行并打「同卡印记」。 */
+  if(acctKey){
+    const sameFac=customers.filter(x=>x.id!==currentCustId && deletedCustomers.indexOf(x.id)<0 && normAcct(x.acct)===acctKey && x.factory===factory);
+    if(sameFac.length){
+      const e=document.getElementById('cust-form-err');
+      e.textContent=lang==='zh'?`银行卡号 ${acct} 已存在于本厂客户「${sameFac[0].name}」，请核对`:`Bank acct ${acct} already used by ${sameFac[0].name} in this plant`;
+      e.classList.remove('hidden');return;
+    }
   }
-  /* 跨三厂按名称校验重复：同名客户若已在其它工厂登记，提示并打上「重名印记」便于跨厂核对；
-     仅银行卡号受硬性唯一约束（上方已拦截）。 */
+  /* 跨厂重复判定：优先按银行卡号；无卡号时退回姓名，保证现金供应商也不会失去跨厂核对提示。 */
   const nameNorm=normName(name);
-  const nameDups=customers.filter(x=>x.id!==currentCustId && deletedCustomers.indexOf(x.id)<0 && normName(x.name)===nameNorm);
+  let dupPool=[], dupBasis='acct', dupLabel=acct;
+  if(acctKey){
+    dupPool=customers.filter(x=>x.id!==currentCustId && deletedCustomers.indexOf(x.id)<0 && normAcct(x.acct)===acctKey && x.factory!==factory);
+  }
+  if(!dupPool.length){
+    /* 无卡号退回姓名判重（与旧版同口径：不限工厂），保证现金供应商不会失去重复提示 */
+    dupBasis='name'; dupLabel=name;
+    dupPool=customers.filter(x=>x.id!==currentCustId && deletedCustomers.indexOf(x.id)<0 && normName(x.name)===nameNorm);
+  }
   let imprints=[];
-  if(nameDups.length){
-    const uniqFac=[...new Set(nameDups.map(x=>FACTORIES[x.factory]?FACTORIES[x.factory].name:x.factory))];
-    const msg=lang==='zh'
-      ? `客户「${name}」已在以下工厂登记：${uniqFac.join('、')}。\n仍要保存吗？系统将为其添加「重名印记」，便于跨厂核对。`
-      : `Customer "${name}" already exists in: ${uniqFac.join(', ')}.\nSave anyway? A duplicate imprint will be added.`;
+  if(dupPool.length){
+    const uniqFac=[...new Set(dupPool.map(x=>FACTORIES[x.factory]?FACTORIES[x.factory].name:x.factory))];
+    const msg=dupBasis==='acct'
+      ? (lang==='zh'
+        ? `银行卡号 ${dupLabel} 已在以下工厂登记：${uniqFac.join('、')}（客户「${dupPool[0].name}」）。\n仍要保存吗？系统将为其添加「同卡印记」，便于跨厂核对。`
+        : `Bank account ${dupLabel} is already registered in: ${uniqFac.join(', ')} (customer "${dupPool[0].name}").\nSave anyway? A same-card imprint will be added.`)
+      : (lang==='zh'
+        ? `该客户未填银行卡号，按姓名比对：同名客户已在以下工厂登记：${uniqFac.join('、')}。\n仍要保存吗？系统将为其添加印记，便于跨厂核对。`
+        : `No bank account given — matched by name: the same name is registered in: ${uniqFac.join(', ')}.\nSave anyway? An imprint will be added.`);
     if(!confirm(msg)){return;}
-    imprints=nameDups.map(x=>x.factory);
+    imprints=dupPool.map(x=>x.factory);
   }
   const data={name,phone:document.getElementById('cm-phone').value.trim(),bank:document.getElementById('cm-bank').value.trim(),
     acct,addr:document.getElementById('cm-addr').value.trim(),note:document.getElementById('cm-note').value.trim(),factory,imprints:imprints.length?imprints:[]};
@@ -3448,7 +3504,7 @@ function editRawInv(key,field,val){
   else if(field==='w'){ ov.w=Math.max(0,Math.round(Number(val)||0)); if(invAdjustRaw[key]!=null)delete invAdjustRaw[key]; /* 绝对重量覆盖相对校正，避免随后改 m/f 时把 +入库 偏移加回来 */ }
   if(ov.w==null){ const comp=flattenRaw(computeInventory(prodScope())); const b=Math.round(Number(comp[key]||0)); ov.w=Number(b)+Number(invAdjustRaw[key]||0); }
   ov.w=Number(ov.w)||0;
-  invRawEdit[key]=ov;clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  invRawEdit[key]=ov;invTouch('raw',key);clearInvDeleted('raw',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'原料库存已更新':'Raw stock updated');
 }
 /* 成品库存自由编辑：覆盖材质/颜色/袋数（老板） */
@@ -3460,7 +3516,7 @@ function editPelletInv(key,field,val){
        旧版的绝对覆盖会冲掉相对校正且脱离造粒源，正是「改袋数后不联动 / 加相同材质无反应」的根因。 */
     const baseB=Math.round(Number(flattenPellet(computeInventory(prodScope()))[key]||0)/BAG_KG);
     invAdjust[key]=Math.max(0,Math.round(Number(val)||0)-baseB);
-    clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+    invTouch('pellet',key);clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
     toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
     return;
   }
@@ -3468,7 +3524,7 @@ function editPelletInv(key,field,val){
   const ov=invPelletEdit[key]||{};
   if(field==='m')ov.m=String(val||'').trim();
   else if(field==='c')ov.c=String(val||'').trim();
-  invPelletEdit[key]=ov;clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
+  invPelletEdit[key]=ov;invTouch('pellet',key);clearInvDeleted('pellet',key);settings.pending=(settings.pending||0)+1;saveState();renderInventory();
   toast(lang==='zh'?'成品库存已更新':'Finished stock updated');
 }
 /* 历史兼容：旧版把成品袋数写成 invPelletEdit[key].bags 绝对覆盖；新模型统一走相对 invAdjust[key]。
@@ -3480,6 +3536,7 @@ function foldPelletEditBags(){
     if(ov&&ov.bags!=null){
       const baseB=Math.round(Number(flattenPellet(computeInventory(prodScope()))[k]||0)/BAG_KG);
       invAdjust[k]=(invAdjust[k]||0)+(Number(ov.bags)||0)-baseB;
+      invTouch('pellet',k);
       delete ov.bags;
       if(Object.keys(ov).length===0)delete invPelletEdit[k];
     }
@@ -3566,6 +3623,7 @@ function addRawStock(){
   if(!(w>0)){toast(lang==='zh'?'请输入有效重量':'Enter valid weight');return;}
   const key=m+'|'+f;
   invAdjustRaw[key]=(invAdjustRaw[key]||0)+w;
+  invTouch('raw',key);                 /* 键级版本：pull 时据此拒绝服务端的旧值覆盖 */
   clearInvDeleted('raw',key); /* 重新入库则解除该键的删除墓碑 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_raw_add',target:m+' '+f+(c?' '+colorLabel(c):''),detail:(lang==='zh'?'原料入库 +':'Raw in +')+Math.round(w)+'kg'});
@@ -3577,6 +3635,7 @@ function addPelletStock(){
   if(!(bags>0)){toast(lang==='zh'?'请输入有效袋数':'Enter valid bags');return;}
   const key=m+'|'+c;
   invAdjust[key]=(invAdjust[key]||0)+bags;
+  invTouch('pellet',key);              /* 键级版本：没有它，同步回来就被服务端旧值盖掉（"加了又没了"） */
   clearInvDeleted('pellet',key); /* 重新入库则解除该键的删除墓碑 */
   settings.pending=(settings.pending||0)+1;
   auditLog.unshift({time:nowHMS(),actor:opName(),action:'ac_pellet_add',target:m+' '+(c?colorLabel(c):''),detail:(lang==='zh'?'成品入库 +':'Finished in +')+bags+unitBag()});
@@ -3608,7 +3667,7 @@ function renderLogistics(){
     if(!window.__lastLogiSync||_n-window.__lastLogiSync>20000){
       window.__lastLogiSync=_n;
       window.__skipLogiSync=1;
-      syncPull().then(function(ok){
+      syncTick().then(function(ok){
         window.__skipLogiSync=0;
         if(ok && typeof renderView==='function' && currentView==='logistics') renderView('logistics');
       }).catch(function(){ window.__skipLogiSync=0; });
@@ -3623,7 +3682,7 @@ function forceLogisticsSync(){
   toast(t('lg_syncing'));
   window.__lastLogiSync=Date.now();
   window.__skipLogiSync=1;
-  syncPull().then(function(ok){
+  syncTick().then(function(ok){
     window.__skipLogiSync=0;
     if(typeof renderView==='function'&&currentView==='logistics') renderView('logistics');
     toast(ok?(lang==='zh'?'已刷新':'Refreshed'):(lang==='zh'?'刷新失败，检查服务器连接':'Refresh failed — check server'));
@@ -3712,7 +3771,7 @@ function confirmInbound(id){
        避免「分厂明明发过货、总厂却提示未找到」的同步时序问题。 */
     if(SYNC.enabled() && typeof fetch==='function'){
       toast(lang==='zh'?'本地未找到，正在从云端刷新…':'Not found locally, refreshing from cloud…');
-      syncPull().then(function(){
+      syncTick().then(function(){
         const inb2=records.find(r=>String(r.id)===String(id)&&r.ty==='Inbound');
         if(inb2){ _doConfirmInbound(inb2); return; }
         /* 云端也没有这条入库，但对应的发货单可能已同步过来：直接按发货单本地补建入库再确认。
@@ -4042,6 +4101,8 @@ function syncPush(){
     invRawEdit:invRawEdit,
     invPelletEdit:invPelletEdit,
     invDeleted:invDeleted,
+    invTs:invTs,
+    prodTs:prodTs,
   });
   return fetch(SYNC.url()+'/sync/push',{method:'POST',headers:SYNC.headers(),body})
     .then(r=>r.json()).then(j=>{
@@ -4054,7 +4115,57 @@ function syncPush(){
       return !!(j&&j.ok);
     }).catch(e=>{ console.warn('syncPush failed',e); return false; });
 }
-function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances, remotePriceBy, remoteProducts, remotePriceHist, remoteInvAdjust, remoteInvAdjustRaw, remoteInvRawEdit, remoteInvPelletEdit, remoteInvDeleted, remoteFx, remotePriceTsBy){
+/* ---- 全局审查：远端整表覆盖本地的三处同源 bug，统一改为键级 LWW / 并集合并 ----
+   bug A：产品目录整表替换 → 本地刚加的材质/颜色被自动同步打回。
+   bug B：调价历史整表替换 → 本地刚记的调价记录被抹掉。
+   bug C：库存覆盖层（invAdjust/invAdjustRaw 标量）被远端无条件覆盖 → 「添加成品库存后自动同步就没了」。
+   三者病根相同：没有版本信号，谁最后 pull 谁说了算。以下合并一律以时间戳裁定。 */
+/* 产品目录：按材质做 LWW，远端版本更新才接受（含"远端已删该材质"的删除传播）。 */
+function mergeProducts(remote, remoteTs){
+  if(!remote||typeof remote!=='object')return;
+  const rts=(remoteTs&&typeof remoteTs==='object')?remoteTs:{};
+  Array.from(new Set(Object.keys(remote).concat(Object.keys(products)))).forEach(function(m){
+    const rt=Number(rts[m])||0, lt=Number(prodTs[m])||0;
+    if(rt<lt)return;                    /* 本地更新：保留本地，绝不被服务端旧值覆盖 */
+    if(rt===lt&&rt>0)return;            /* 同一毫秒的同一份写入：保留本地，避免无意义抖动 */
+    if(rt>lt)prodTs[m]=rt;
+    if(Array.isArray(remote[m]))products[m]=remote[m].slice();
+    else delete products[m];            /* 远端版本更新且已无此材质 → 同步删除 */
+  });
+}
+/* 调价历史是追加式日志，整表替换会抹掉本地新增；改为按 (raw+t+d) 去重的并集，本地在前。 */
+function mergePriceHist(remote){
+  if(!Array.isArray(remote))return;
+  const seen={}, out=[];
+  [priceHist,remote].forEach(function(arr){
+    (arr||[]).forEach(function(h){
+      if(!h||typeof h!=='object')return;
+      const k=String(h.raw||'')+'|'+String(h.t||'')+'|'+String(h.d||'');
+      if(seen[k])return; seen[k]=1; out.push(h);
+    });
+  });
+  priceHist=out.slice(0,300);
+}
+/* 库存覆盖层：invAdjust(标量) 与 invPelletEdit(对象) 是同一键的两种表述，共用一个版本桶，
+   以 invTs[kind][key] 裁定。写回以「远端有没有这个键」为准，远端版本更新且已无此键则本地同步删除。 */
+function applyInvKey(local, remote, k){
+  if(remote&&Object.prototype.hasOwnProperty.call(remote,k)) local[k]=(remote[k]&&typeof remote[k]==='object')?Object.assign({},remote[k]):remote[k];
+  else delete local[k];
+}
+function mergeInvPair(kind, localScalar, remoteScalar, localObj, remoteObj, remoteTs){
+  if(!invTs[kind]||typeof invTs[kind]!=='object')invTs[kind]={};
+  const lts=invTs[kind];
+  const rts=(remoteTs&&remoteTs[kind]&&typeof remoteTs[kind]==='object')?remoteTs[kind]:{};
+  Array.from(new Set([].concat(Object.keys(remoteScalar||{}),Object.keys(localScalar||{}),Object.keys(remoteObj||{}),Object.keys(localObj||{})))).forEach(function(k){
+    const rt=Number(rts[k])||0, lt=Number(lts[k])||0;
+    if(rt<lt)return;                    /* 本地更新：保留本地 —— 这是「加了又没了」的正面修复点 */
+    if(rt===lt&&rt>0)return;            /* 同一毫秒的同一份写入：保留本地 */
+    if(rt>lt)lts[k]=rt;                 /* 远端更新：值与版本一并接受 */
+    applyInvKey(localScalar,remoteScalar,k);
+    applyInvKey(localObj,remoteObj,k);
+  });
+}
+function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDelUsers, remoteDelCustomers, remoteFinances, remoteDelFinances, remotePriceBy, remoteProducts, remotePriceHist, remoteInvAdjust, remoteInvAdjustRaw, remoteInvRawEdit, remoteInvPelletEdit, remoteInvDeleted, remoteFx, remotePriceTsBy, remoteInvTs, remoteProdTs){
   /* 先落墓碑，再合并记录：让同一批次里「记录 + 它的删除墓碑」同时到达时，记录根本进不来，
      消除「先加后删」的中间态（此前顺序相反，若中途抛错就会留下半合并的脏数据）。 */
   (deleted||[]).forEach(function(gid){
@@ -4118,29 +4229,23 @@ function applyRemote(remoteRecs, deleted, remoteUsers, remoteCustomers, remoteDe
       });
     });
   }
-  if(remoteProducts&&typeof remoteProducts==='object'&&Object.keys(remoteProducts).length)products=remoteProducts;
-  if(Array.isArray(remotePriceHist))priceHist=remotePriceHist;
-  /* 库存覆盖合并：逐字段 LWW（本地优先），杜绝「远端只改了 m/c 的覆盖对象把本地已手填的 bags/w 冲掉」导致的编辑复原 */
-  function mergeInvOverlay(local, remote){
-    if(!remote||typeof remote!=='object')return;
-    for(const k in remote){
-      const r=remote[k];
-      if(!r||typeof r!=='object'){ if(r!==undefined)local[k]=r; continue; } /* 标量（invAdjust/invAdjustRaw）直接取值 */
-      const l=local[k];
-      if(!l||typeof l!=='object')local[k]=Object.assign({},r);
-      else local[k]=Object.assign({},r,l); /* 本地字段优先，远程独有字段补齐（双设备各自改不同字段时合并保留） */
-    }
-  }
-  mergeInvOverlay(invAdjust,remoteInvAdjust);
-  mergeInvOverlay(invAdjustRaw,remoteInvAdjustRaw);
-  mergeInvOverlay(invRawEdit,remoteInvRawEdit);
-  mergeInvOverlay(invPelletEdit,remoteInvPelletEdit);
+  mergeProducts(remoteProducts, remoteProdTs);
+  mergePriceHist(remotePriceHist);
+  mergeInvPair('pellet', invAdjust, remoteInvAdjust, invPelletEdit, remoteInvPelletEdit, remoteInvTs);
+  mergeInvPair('raw', invAdjustRaw, remoteInvAdjustRaw, invRawEdit, remoteInvRawEdit, remoteInvTs);
   /* 库存删除墓碑：先合并远端墓碑到本地（取较新时间戳），再强制剔除已删键——这是修复"删除几秒后复活"的关键：
      服务端对库存 map 是合并存储，被删的键不会因 push 中 absent 而消失；必须由墓碑在每次 pull 后显式剔除。 */
   if(remoteInvDeleted&&typeof remoteInvDeleted==='object'){
     ['raw','pellet'].forEach(function(kind){
       const rk=remoteInvDeleted[kind]||{};
-      Object.keys(rk).forEach(function(k){ const ts=rk[k]||0; if(ts>0){ invDeleted[kind]=invDeleted[kind]||{}; if((invDeleted[kind][k]||0)<ts)invDeleted[kind][k]=ts; } });
+      Object.keys(rk).forEach(function(k){
+        const ts=rk[k]||0; if(ts<=0)return;
+        /* 墓碑必须让位于「更晚的重新入库」：本地 clearInvDeleted 把墓碑置 0 的同时 invTouch 打上了新 ts，
+           若远端墓碑早于该 ts，说明这是删掉之后的再次入库，接受墓碑会当场把刚加的库存抹掉。 */
+        const lt=Number((invTs[kind]||{})[k])||0;
+        if(lt&&ts<lt)return;
+        invDeleted[kind]=invDeleted[kind]||{}; if((invDeleted[kind][k]||0)<ts)invDeleted[kind][k]=ts;
+      });
     });
   }
   ['raw','pellet'].forEach(function(kind){
@@ -4165,7 +4270,7 @@ function syncPull(){
   return fetch(SYNC.url()+'/sync/pull?since='+since,{method:'POST',headers:SYNC.headers(),body:'{}'})
     .then(r=>r.json()).then(j=>{
       if(!j||!j.records) return false;
-      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[], j.priceBy, j.products, j.priceHist, j.invAdjust, j.invAdjustRaw, j.invRawEdit, j.invPelletEdit, j.invDeleted, j.fx, j.priceTsBy);
+      applyRemote(j.records, j.deleted||[], j.users||[], j.customers||[], j.deletedUsers||[], j.deletedCustomers||[], j.finances||[], j.deletedFinances||[], j.priceBy, j.products, j.priceHist, j.invAdjust, j.invAdjustRaw, j.invRawEdit, j.invPelletEdit, j.invDeleted, j.fx, j.priceTsBy, j.invTs, j.prodTs);
       /* 数据互通：拉取后重新校验「发货→总厂入库」配对，确保总厂始终有可确认的来料入库单
          （分厂发货在分厂本地生成入库单可能因未同步而不到达总厂，此处以总厂本地补齐） */
       reconcileAll();
@@ -4186,14 +4291,17 @@ function scheduleSyncRetry(attempt){
   if(syncRetryTimer) return;
   syncRetryTimer=setTimeout(function(){ syncRetryTimer=null; if(SYNC.enabled()&&hasOutbound()) syncTick(attempt+1); }, 15000);
 }
+/* 返回 Promise：调用方可以在同步完成后重渲染。
+   关键：所有"想拿云端最新数据"的入口都必须走这里而不是裸 syncPull —— 裸拉会在本地待上传变更
+   还没推上去时就被服务端的旧值覆盖回来，正是「刚加的库存/价格同步后消失」的触发路径之一。 */
 function syncTick(att){
-  if(!SYNC.enabled()) return;
-  if(syncLock) return;
+  if(!SYNC.enabled()) return Promise.resolve(false);
+  if(syncLock) return Promise.resolve(false);
   syncLock=true;
   setSyncState('syncing');
   const doPush=hasOutbound()?syncPush():Promise.resolve(true);
-  doPush.then(function(){ return syncPull(); }).then(function(ok){ syncLock=false; setSyncState(ok?'idle':'error'); })
-    .catch(function(){ syncLock=false; setSyncState('error'); scheduleSyncRetry((att||0)+1); });
+  return doPush.then(function(){ return syncPull(); }).then(function(ok){ syncLock=false; setSyncState(ok?'idle':'error'); return ok; })
+    .catch(function(){ syncLock=false; setSyncState('error'); scheduleSyncRetry((att||0)+1); return false; });
 }
 function renderSyncConfig(){
   const u=document.getElementById('sy-url'); if(u)u.value=settings.syncUrl||'';
@@ -4269,7 +4377,7 @@ function backupCloud(){
 }
 function restoreBackup(input){const f=input.files&&input.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s&&s.records){if(!confirm(lang==='zh'?'恢复备份将覆盖当前数据，确定？':'Overwrite current data?'))return;if(Array.isArray(s.customers))customers=s.customers;if(Array.isArray(s.records))records=s.records.map(r=>{if(!r.items)r.items=[];if(!r.factory)r.factory='Sagamu';recTotals(r);return r;});if(s.priceMap)priceMap=s.priceMap;if(s.products)products=s.products;if(s.priceHist)priceHist=s.priceHist;
 if(s.invRawEdit)invRawEdit=s.invRawEdit;
-if(s.invPelletEdit)invPelletEdit=s.invPelletEdit;if(s.auditLog)auditLog=s.auditLog;if(s.settings)settings=Object.assign(settings,s.settings);if(Array.isArray(s.users)&&s.users.length)users=s.users;saveState();renderAll();toast(lang==='zh'?'已恢复备份':'Backup restored');}}catch(e){toast(lang==='zh'?'恢复失败':'Restore failed');}};rd.readAsText(f);}
+if(s.invPelletEdit)invPelletEdit=s.invPelletEdit;if(s.invTs&&typeof s.invTs==='object')invTs={raw:(s.invTs.raw||{}),pellet:(s.invTs.pellet||{})};if(s.prodTs)prodTs=s.prodTs;if(s.auditLog)auditLog=s.auditLog;if(s.settings)settings=Object.assign(settings,s.settings);if(Array.isArray(s.users)&&s.users.length)users=s.users;saveState();renderAll();toast(lang==='zh'?'已恢复备份':'Backup restored');}}catch(e){toast(lang==='zh'?'恢复失败':'Restore failed');}};rd.readAsText(f);}
 function saveLocal(){const el=document.getElementById('lo-lang');if(el)settings.lang=el.value;saveState();setLang(settings.lang||'zh');toast(lang==='zh'?'设置已保存':'Settings saved');}
 function renderAudit(){const el=document.getElementById('audit-body');if(!el)return;const rows=(auditLog||[]).slice(0,300).map((r,i)=>`<tr><td class="muted">${esc(r.time||'')}</td><td>${esc(r.actor||'')}</td><td>${esc(t(r.action)||r.action||'')}</td><td>${esc(r.target||'')}</td><td class="muted">${esc(r.detail||'')}</td><td><span class="link u-danger" ${act('deleteAuditItem',i)}>${t('delete')}</span></td></tr>`).join('');el.innerHTML=rows||`<tr><td colspan="6" class="muted">—</td></tr>`;}
 /* 单条删除审计记录（操作本身记入审计，形成闭环可追溯） */
@@ -4696,12 +4804,16 @@ function logout(){
 function renderAccounts(){
   const el=document.getElementById('accounts-body');if(!el)return;
   const canEdit=can('account.manage');
-  const rows=users.map(u=>{
+  /* 工厂隔离：非顶层角色（如分厂管理员）在「角色与权限」里只看到自己所属工厂的账号，
+     避免分厂管理员误看到全集团人员名单——各厂的账号与人员属各自工厂隐私，不该互瞅。 */
+  const myFacs = isTopRole() ? null : (currentUser ? currentUser.factories : []);
+  const list = myFacs ? users.filter(u=> u.factories.some(f=> myFacs.includes(f))) : users;
+  const rows=list.map(u=>{
     const grant = canEdit&&u.username!==(currentUser&&currentUser.username) ? `<span class="link" ${act('loadAcct',u.username)}>${t('acct_grant')}</span>` : '—';
     const del = (canEdit&&u.role!=='boss'&&u.role!=='devAdmin') ? `<span class="link u-danger" ${act('deleteAccount',u.username)}>${t('acct_delete')}</span>` : '—';
     return `<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.name||'')}</td><td>${roleBadgeMap[u.role]?roleBadgeMap[u.role][lang]:u.role}</td><td>${u.factories.map(f=>FACTORIES[f]?FACTORIES[f].name:f).join('、')}</td><td>${grant} &nbsp; ${del}</td></tr>`;
   }).join('');
-  el.innerHTML=rows||`<tr><td colspan="5" class="muted">—</td></tr>`;
+  el.innerHTML=rows||`<tr><td colspan="5" class="muted">${lang==='zh'?'— 本厂暂无其他账号 —':'— no other accounts in your plant —'}</td></tr>`;
 }
 let editingAcct=null; /* 非空表示正在编辑已有账号（老板赋权） */
 function openAcctModal(presetUser){
@@ -4877,9 +4989,10 @@ function resetSelectedData(cat){
   if(cat==='InvPellet'){
     invAdjust={}; invPelletEdit={};
     invDeleted.pellet={};
+    invTs.pellet={};            /* 版本桶一并清空，否则残留的旧 ts 会让归零后的状态自认为"更新"而拒绝远端对齐 */
   } else {
     const removed = records.filter(r=>r.ty===cat);
-    if(cat==='ALL'){ records=[]; customers.forEach(c=>{c.kg=0;c.amt=0;c.last='';}); invAdjust={};invAdjustRaw={}; invRawEdit={}; invPelletEdit={}; invDeleted={raw:{},pellet:{}}; }
+    if(cat==='ALL'){ records=[]; customers.forEach(c=>{c.kg=0;c.amt=0;c.last='';}); invAdjust={};invAdjustRaw={}; invRawEdit={}; invPelletEdit={}; invDeleted={raw:{},pellet:{}}; invTs={raw:{},pellet:{}}; }
     else { records=records.filter(r=>r.ty!==cat); recomputeCustomerTotals(); }
     removed.forEach(r=>addTomb(r.id, currentRole)); /* 分类删除也走墓碑，跨设备生效 */
   }

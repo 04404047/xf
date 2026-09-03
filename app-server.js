@@ -89,6 +89,12 @@ let invPelletEdit = {};
 /* 库存删除墓碑：kind -> {key: deleteTs}。让"删除库存条目"跨设备生效、且不被合并存储复活
    （被删的键在 push 中 absent，Object.assign 合并不会移除它，必须由墓碑显式剔除）。 */
 let invDeleted = { raw:{}, pellet:{} };
+/* 库存覆盖层的键级 LWW 时间戳：kind -> key -> 写入时间(ms)。
+   没有它，服务端只能"后来者整表覆盖"，客户端 pull 时又会把本地刚写的值盖掉
+   ——「添加成品库存后自动同步就没了」的服务端一侧成因。invAdjust 与 invPelletEdit 共用 pellet 桶。 */
+let invTs = { raw:{}, pellet:{} };
+/* 产品目录键级 LWW 时间戳：材质 -> 最后修改时间(ms)。 */
+let prodTs = {};
 /* 汇率（1 CNY = ? NGN）：服务端权威，按 ts 做 LWW。
    此前汇率只存在各设备本地 settings，同一笔账在不同机器上会算出不同金额。 */
 let fx = null; // {rate, ts, by, hist:[{rate,ts,by,prev}]}
@@ -131,6 +137,18 @@ try {
     if (d.invRawEdit && typeof d.invRawEdit === 'object') invRawEdit = d.invRawEdit;
     if (d.invPelletEdit && typeof d.invPelletEdit === 'object') invPelletEdit = d.invPelletEdit;
     if (d.invDeleted && typeof d.invDeleted === 'object') invDeleted = { raw: (d.invDeleted.raw || {}), pellet: (d.invDeleted.pellet || {}) };
+    /* 存量数据无版本信息：补 1（早于任何真实写入），使"老值"能被任何带 ts 的新写入覆盖，
+       又不会因为 ts=0 被判定成"远端没有 → 删掉"。 */
+    invTs = { raw:{}, pellet:{} };
+    if (d.invTs && typeof d.invTs === 'object') invTs = { raw: (d.invTs.raw || {}), pellet: (d.invTs.pellet || {}) };
+    ['raw','pellet'].forEach(function (kind) {
+      const bucket = invTs[kind];
+      const maps = kind === 'raw' ? [invAdjustRaw, invRawEdit] : [invAdjust, invPelletEdit];
+      maps.forEach(function (m) { Object.keys(m || {}).forEach(function (k) { if (!bucket[k]) bucket[k] = 1; }); });
+    });
+    prodTs = {};
+    if (d.prodTs && typeof d.prodTs === 'object') prodTs = Object.assign({}, d.prodTs);
+    Object.keys(products || {}).forEach(function (m) { if (!prodTs[m]) prodTs[m] = 1; });
     if (d.fx && typeof d.fx === 'object' && d.fx.rate > 0) fx = { rate: d.fx.rate, ts: d.fx.ts || 0, by: d.fx.by || '', hist: Array.isArray(d.fx.hist) ? d.fx.hist.slice(0, 50) : [] };
     console.log('[sync] 已载入本地账本：%d 条记录，%d 条删除墓碑；账号 %d；客户 %d；财务 %d',
       Object.keys(ledger).length, deleted.length, Object.keys(usersById).length, Object.keys(customersById).length, Object.keys(financesById).length);
@@ -266,7 +284,7 @@ function persist() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, fx, accounts, priceBy, priceTsBy, products, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted }, null, 0);
+    const plain = JSON.stringify({ ledger, deleted, usersById, customersById, deletedUsers, deletedCustomers, financesById, deletedFinances, fx, accounts, priceBy, priceTsBy, products, prodTs, priceHist, invAdjust, invAdjustRaw, invRawEdit, invPelletEdit, invDeleted, invTs }, null, 0);
     const packed = encryptData(plain);
     const payload = packed.enc ? ('ENC:' + packed.data) : plain;
     /* 落盘失败必须重试并留痕：只 console.warn 一次会造成「业务显示成功、重启后数据没了」的静默丢失 */
@@ -409,6 +427,49 @@ function mergeInv(target, src, kind) {
     if (invDeleted[kind] && (invDeleted[kind][k] || 0) > 0) return;
     target[k] = src[k];
   });
+}
+/* 库存覆盖层的键级 LWW：tsNew 为该批推送携带的版本（kind -> key -> ts）。
+   服务端此前是「后来者整表覆盖」，于是两台设备各自改不同的键会互相抹掉对方；
+   逐键比版本后，旧推送不再能覆盖服务端的新值，新值也一定能上去。 */
+function mergeInvLWW(target, src, kind, tsNew) {
+  if (!src || typeof src !== 'object') return;
+  const inTs = (tsNew && tsNew[kind] && typeof tsNew[kind] === 'object') ? tsNew[kind] : {};
+  if (!invTs[kind]) invTs[kind] = {};
+  Object.keys(src).forEach(function (k) {
+    if (invDeleted[kind] && (invDeleted[kind][k] || 0) > 0) return;
+    const it = Number(inTs[k]) || 0;
+    const st = Number(invTs[kind][k]) || 0;
+    if (it < st) return;                 /* 推送来的是旧值：保留服务端新值 */
+    target[k] = src[k];
+    if (it > st) invTs[kind][k] = it;
+  });
+}
+/* 产品目录：按材质做 LWW（远端/推送方版本更新才接受），保留删除传播能力 */
+function mergeProducts(src, srcTs) {
+  if (!src || typeof src !== 'object') return;
+  const inTs = (srcTs && typeof srcTs === 'object') ? srcTs : {};
+  Object.keys(src).forEach(function (m) {
+    const it = Number(inTs[m]) || 0;
+    const st = Number(prodTs[m]) || 0;
+    if (it < st) return;
+    if (Array.isArray(src[m])) products[m] = src[m].slice();
+    else delete products[m];
+    if (it > st) prodTs[m] = it;
+  });
+}
+/* 调价历史是追加式日志：整表替换会抹掉别的设备记的调价，改为按 (raw+t+d) 去重的并集 */
+function mergePriceHist(src) {
+  if (!Array.isArray(src)) return;
+  const seen = {}, out = [];
+  [priceHist, src].forEach(function (arr) {
+    (arr || []).forEach(function (h) {
+      if (!h || typeof h !== 'object') return;
+      const k = String(h.raw || '') + '|' + String(h.t || '') + '|' + String(h.d || '');
+      if (seen[k]) return;
+      seen[k] = 1; out.push(h);
+    });
+  });
+  priceHist = out.slice(0, 300);
 }
 
 /* ---------- 登录限流（内存滑动窗口） ----------
@@ -737,8 +798,19 @@ const server = http.createServer(async (req, res) => {
         });
       });
     }
-    if (body.products && typeof body.products === 'object' && Object.keys(body.products).length) products = body.products;
-    if (Array.isArray(body.priceHist)) priceHist = body.priceHist;
+    mergeProducts(body.products, body.prodTs);
+    if (Array.isArray(body.priceHist)) mergePriceHist(body.priceHist);
+    /* 库存版本桶：先把推送方的 ts 并进来（取较大者），供后续 mergeInvLWW 逐键裁定。
+       注意顺序——ts 必须在值之前落定，否则本次推上来的新值会被自己的旧 ts 挡在门外。 */
+    const inInvTs = (body.invTs && typeof body.invTs === 'object') ? body.invTs : {};
+    ['raw', 'pellet'].forEach(function (kind) {
+      const rk = inInvTs[kind] || {};
+      if (!invTs[kind]) invTs[kind] = {};
+      Object.keys(rk).forEach(function (k) {
+        const it = Number(rk[k]) || 0;
+        if (it > (Number(invTs[kind][k]) || 0)) invTs[kind][k] = it;
+      });
+    });
     /* 库存删除墓碑：被删的键在 push body 中 absent，Object.assign 合并不会移除它，
        故先依据 invDeleted 显式剔除（删除时间戳>0 才生效，取较新者），并阻止后续合并重新加回。 */
     const incInvDeleted = (body.invDeleted && typeof body.invDeleted === 'object') ? body.invDeleted : {};
@@ -756,15 +828,19 @@ const server = http.createServer(async (req, res) => {
           else { delete invAdjust[key]; delete invPelletEdit[key]; }
           return;
         }
+        /* 墓碑必须让位于「更晚的重新入库」：客户端重新入库时会把墓碑置 0 并给该键打上新 ts，
+           若推上来的墓碑早于这个 ts，说明这是删掉之后的再次入库，接受它会当场抹掉新库存。 */
+        const lt = Number((invTs[kind] && invTs[kind][key]) || 0);
+        if (lt && ts < lt) return;
         if (kind === 'raw') { delete invAdjustRaw[key]; delete invRawEdit[key]; if (body.invAdjustRaw) delete body.invAdjustRaw[key]; if (body.invRawEdit) delete body.invRawEdit[key]; }
         else { delete invAdjust[key]; delete invPelletEdit[key]; if (body.invAdjust) delete body.invAdjust[key]; if (body.invPelletEdit) delete body.invPelletEdit[key]; }
         if ((invDeleted[kind][key] || 0) < ts) invDeleted[kind][key] = ts;
       });
     });
-    if (body.invAdjust && typeof body.invAdjust === 'object') mergeInv(invAdjust, body.invAdjust, 'pellet');
-    if (body.invAdjustRaw && typeof body.invAdjustRaw === 'object') mergeInv(invAdjustRaw, body.invAdjustRaw, 'raw');
-    if (body.invRawEdit && typeof body.invRawEdit === 'object') mergeInv(invRawEdit, body.invRawEdit, 'raw');
-    if (body.invPelletEdit && typeof body.invPelletEdit === 'object') mergeInv(invPelletEdit, body.invPelletEdit, 'pellet');
+    if (body.invAdjust && typeof body.invAdjust === 'object') mergeInvLWW(invAdjust, body.invAdjust, 'pellet', inInvTs);
+    if (body.invAdjustRaw && typeof body.invAdjustRaw === 'object') mergeInvLWW(invAdjustRaw, body.invAdjustRaw, 'raw', inInvTs);
+    if (body.invRawEdit && typeof body.invRawEdit === 'object') mergeInvLWW(invRawEdit, body.invRawEdit, 'raw', inInvTs);
+    if (body.invPelletEdit && typeof body.invPelletEdit === 'object') mergeInvLWW(invPelletEdit, body.invPelletEdit, 'pellet', inInvTs);
     persist();
     sendJSON(res, 200, { ok: true, serverTime: Date.now(), count: Object.keys(ledger).length }, req);
     return;
@@ -801,12 +877,14 @@ const server = http.createServer(async (req, res) => {
       priceBy: priceBy,
       priceTsBy: priceTsBy,
       products: products,
+      prodTs: prodTs,
       priceHist: priceHist,
       invAdjust: invAdjust,
       invAdjustRaw: invAdjustRaw,
       invRawEdit: invRawEdit,
       invPelletEdit: invPelletEdit,
       invDeleted: invDeleted,
+      invTs: invTs,
       fx: fx
     }, req);
     return;
