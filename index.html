@@ -2309,13 +2309,13 @@ function renderToday(){
 function renderCustomers(){
   const q=document.getElementById('cust-search').value.toLowerCase();
   const list=visibleCustomers().filter(c=>(!q||(c.name+' '+c.phone).toLowerCase().includes(q)));
-  document.getElementById('cust-body').innerHTML=list.map(c=>{const st=custStatus(c);const avg=avgIntervalDays(c);const fac=esc(FACTORIES[c.factory]?FACTORIES[c.factory].name:c.factory);const imp=(c.imprints&&c.imprints.length)?`<span class="tag t-dup" title="${t('c_imprint_tip')}">⚠ ${t('c_imprint')} · ${esc(c.imprints.map(f=>FACTORIES[f]?FACTORIES[f].short:f).join('/'))}</span>`:'';return `<tr>
+  document.getElementById('cust-body').innerHTML=list.length?list.map(c=>{const st=custStatus(c);const avg=avgIntervalDays(c);const fac=esc(FACTORIES[c.factory]?FACTORIES[c.factory].name:c.factory);const imp=(c.imprints&&c.imprints.length)?`<span class="tag t-dup" title="${t('c_imprint_tip')}">⚠ ${t('c_imprint')} · ${esc(c.imprints.map(f=>FACTORIES[f]?FACTORIES[f].short:f).join('/'))}</span>`:'';return `<tr>
     <td><b>${esc(c.name)}</b><br/><span class="tag t-fac">${esc(fac)}</span>${imp}</td>
     <td><span class="tag ${STATUS[st].cls}">${STATUS[st][lang]}</span></td>
     <td>${esc(c.phone)}</td><td>${esc(c.bank)}</td><td>${esc(c.acct)}</td>
     <td class="num">${c.kg.toLocaleString()} kg</td><td class="num">${fmtCur(c.amt)}</td>
     <td class="num">${avg===null?'—':avg+(lang==='zh'?' 天/次':'d')}</td>
-    <td>${esc(c.last)}</td><td><span class="link" ${act('openCustomer',c.id)}>${t('c_view')||'查看 →'}</span>${can('customer.delete')?` · <span class="link u-danger" ${act('deleteCust',c.id)}>${t('c_del')}</span>`:''}</td></tr>`;}).join('');
+    <td>${esc(c.last)}</td><td><span class="link" ${act('openCustomer',c.id)}>${t('c_view')||'查看 →'}</span>${can('customer.delete')?` · <span class="link u-danger" ${act('deleteCust',c.id)}>${t('c_del')}</span>`:''}</td></tr>`;}).join(''):`<tr><td colspan="10" class="muted">${lang==='zh'?'暂无客户':'No suppliers'}</td></tr>`;
   document.getElementById('cust-count').textContent=list.length+' '+(lang==='zh'?'家供货商':'suppliers');
 }
 function filterCustomers(){renderCustomers();}
@@ -2858,13 +2858,13 @@ function renderPricing(){
   const fac=priceFactoryScope();
   const lb=document.getElementById('pf-fac');if(lb)lb.textContent=(lang==='zh'?'当前厂区价格：':'Prices for ')+(FACTORIES[fac]?FACTORIES[fac].name:fac);
   const cols = MAT_COLOR[`${m}|${f}`]||[];
-  document.getElementById('price-body').innerHTML=cols.map(col=>{
+  document.getElementById('price-body').innerHTML=cols.length?cols.map(col=>{
     const p=rcPrice(m,f,col);
     return `<tr><td><b>${m}</b></td><td>${f}</td><td>${colorLabel(col)}</td>
       <td class="num"><input class="pp-i u-w90" type="number" value="${p}"/></td>
       <td><button class="btn ghost sm pp-apply" ${act('applyPrice',m,f,col)}>${t('p_apply2')}</button></td>
       <td><span class="tag g">${t('p_status')}</span></td></tr>`;
-  }).join('');
+  }).join(''):`<tr><td colspan="6" class="muted">${lang==='zh'?'暂无颜色价格':'No colors priced'}</td></tr>`;
 }
 function applyPrice(m,f,c,btn){
   if(!can('pricing')){toast(lang==='zh'?'无调价权限':'No pricing permission');return;}
